@@ -1,0 +1,30 @@
+{
+  "distribution": "rsl-rl-lib",
+  "version": "5.4.2",
+  "package": "rsl_rl",
+  "upstream_source_url": "https://github.com/leggedrobotics/rsl_rl/tree/v5.4.2/rsl_rl",
+  "copied_from": "installed_distribution",
+  "installed_package_root": "/home/godot/mjlab-isolated-v160/.venv/lib/python3.12/site-packages/rsl_rl",
+  "package_subdirectory": "rsl_rl",
+  "license": "BSD-3-Clause",
+  "vcs_info": null,
+  "source_file_count": 30,
+  "python_file_count": 30,
+  "source_bytes": 197160,
+  "license_file_count": 17,
+  "excluded_suffix_counts": {},
+  "exclusions": [
+    "compiled bytecode and caches",
+    "mesh assets, binary models and runtime outputs"
+  ],
+  "notes": "The copied source/text files are byte-identical to both the installed package and the official tagged source archive. Excluded mesh assets are not part of the comparison. For packages without direct_url metadata, no Git commit identity is asserted.",
+  "upstream_verification": {
+    "archive_url": "https://codeload.github.com/leggedrobotics/rsl_rl/tar.gz/refs/tags/v5.4.2",
+    "archive_sha256": "bcc00d1d473c2cf0dc0ee0fbc420cda473dd91ba7a3c3e4db63f589b6822b8eb",
+    "method": "byte_for_byte_comparison_of_all_retained_package_files",
+    "compared_file_count": 30,
+    "all_retained_files_match": true,
+    "license_matches_upstream": true,
+    "verified_date": "2026-10-26"
+  }
+}

@@ -58,7 +58,7 @@ def parser():
             p.add_argument('--envs', type=positive)
             p.add_argument('--iterations', type=positive, help='ADDITIONAL PPO iterations for resume')
             p.add_argument('--name', default='g1')
-            p.add_argument('--seed', type=int, default=42)
+            p.add_argument('--seed', type=int, help='Training seed; default 42 for train, inherited from checkpoint for resume')
             p.add_argument('--benchmark-run', action='store_true', help=argparse.SUPPRESS)
         if command == 'play':
             p.add_argument('--viewer', choices=['viser', 'native'], default='viser')
@@ -68,6 +68,8 @@ def parser():
             p.add_argument('--seconds', type=positive, default=60)
             p.add_argument('--velocity-cmd', nargs=3, type=float, metavar=('VX', 'VY', 'WZ'),
                            help='Fixed BODY-frame velocity, m/s m/s rad/s; disables random command branches')
+            p.add_argument('--evaluation-seed', type=int,
+                           help='Override evaluation seed without changing the training seed or profile')
     dep = sub.add_parser('deploy-sim', help='Replay exported TorchScript, without loading training checkpoint')
     dep.add_argument('--bundle', required=True)
     dep.add_argument('--device', default='cuda:0')

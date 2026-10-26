@@ -6,6 +6,7 @@ PPO 采样/GAE/优化循环由固定版本 RSL-RL 执行，源码位置见 show-
 from dataclasses import asdict
 
 from .contract import validate_resume, write_json
+from .configuration import inherited_run_options
 from .runtime import initialize, build_configs, checkpoint_context, make_env_runner, new_run
 
 
@@ -24,7 +25,10 @@ def train(root, args, checkpoint=None):
         # 续训优先恢复原任务和动作文件，不依赖本次命令的默认 profile。
         saved, profile, motion = checkpoint_context(root, checkpoint, args.profile, motion, args.legacy_velocity)
     # 2. 合并 profile、官方环境配置、PPO 配置和命令行覆盖。
-    spec, cfg, agent, manifest = build_configs(root, profile, args.envs, motion, seed=args.seed)
+    # 未显式指定时，续训继承原来的并行数与种子；tracking 不会再被平地
+    # 脚本的 2048 默认值覆盖。从零训练则取 profile 环境数和默认种子 42。
+    num_envs, seed = inherited_run_options(args, saved)
+    spec, cfg, agent, manifest = build_configs(root, profile, num_envs, motion, seed=seed)
     if saved:
         # 允许调整并行环境数；观测任务、动作数据、版本、控制周期等必须一致。
         validate_resume(saved, manifest)
@@ -54,6 +58,10 @@ def train(root, args, checkpoint=None):
             runner.load(str(checkpoint), strict=True, map_location=args.device)
             # RSL-RL 保存的是最后完成的编号，learn 又从当前编号开始，故加一。
             runner.current_learning_iteration += 1
+            if manifest.get('recipe'):
+                # 环境构造时公共步计数从 0 开始，load 才恢复课程计数。
+                # 重新 reset，让本次第一次采样就使用恢复后的课程阶段。
+                env.reset()
         import rsl_rl.runners.on_policy_runner as runner_module
         from .timing import monotonic_runner_clock
         with monotonic_runner_clock(runner_module):

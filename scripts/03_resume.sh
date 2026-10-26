@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
-# 续训本工作空间最近运行中的最高数字模型，默认新增 1000 次 PPO 更新。
-# 每次写新目录。混用多个任务时，应显式传 --checkpoint /具体运行目录。
+# 续训默认继承模型保存的并行数和种子，新增 1000 次 PPO 更新。
+# 在 common.sh 填入平地默认值前，记住用户是否显式设置了 G1_ENV_COUNT。
+G1_RESUME_ENVS="${G1_ENV_COUNT:-}"
 source "$(dirname -- "${BASH_SOURCE[0]}")/common.sh"
-exec bash "$G1_ROOT/g1.sh" resume --checkpoint "$G1_CHECKPOINT" --envs "$G1_ENV_COUNT" \
-  --iterations 1000 --name g1_2048_continue "$@"
+G1_RESUME_ARGS=(resume --checkpoint "$G1_CHECKPOINT" --iterations 1000 --name g1_continue)
+if [ -n "$G1_RESUME_ENVS" ]; then
+  G1_RESUME_ARGS+=(--envs "$G1_RESUME_ENVS")
+fi
+# 命令末尾的 --envs/--seed 仍可显式覆盖；旧实验不需要修改 profile 文件。
+exec bash "$G1_ROOT/g1.sh" "${G1_RESUME_ARGS[@]}" "$@"

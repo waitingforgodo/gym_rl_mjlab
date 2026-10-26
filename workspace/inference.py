@@ -18,8 +18,10 @@ def load_for_inference(root, args, checkpoint, num_envs=1):
     initialize(root)
     # 从 checkpoint 同目录清单恢复 profile/动作，play 配置关闭部分训练扰动。
     saved, profile, motion = checkpoint_context(root, checkpoint, args.profile, args.motion, args.legacy_velocity)
-    spec, cfg, agent, manifest = build_configs(root, profile, num_envs, motion, play=True,
-                                               seed=saved.get('seed', 42) if saved else 42)
+    seed = getattr(args, 'evaluation_seed', None)
+    if seed is None:
+        seed = saved.get('seed', 42) if saved else 42
+    spec, cfg, agent, manifest = build_configs(root, profile, num_envs, motion, play=True, seed=seed)
     if saved:
         validate_resume(saved, manifest)
     from .evaluation import configure_fixed_velocity, velocity_protocol

@@ -4,6 +4,7 @@
 outputs/
 motions/raw/
 motions/processed/
+motions/reference_sources.json
 __pycache__/
 *.pyc
 

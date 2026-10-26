@@ -2,6 +2,8 @@
 
 本文对应当前工作空间、mjlab **1.6.0**、RSL-RL **5.4.2**、G1 **29 自由度**。按本次确定的范围，流程到导出策略的仿真部署为止。每一步有单独 Python 程序，实际实现分文件并附中文注释。
 
+本教程保留旧基线流程。新增 `velocity_robust`、`tracking_robust` 和无状态估计候选的来源、中文参数解释、训练入口及对照评估见 [训练配置优化依据与对照实验](训练配置优化依据与对照实验.md)。
+
 ## 1. 完整代码在哪里
 
 训练链路由本空间的流程代码、mjlab 的任务/动力学代码、RSL-RL 的算法代码共同组成。`workspace/cli.py` 负责解析参数和分发命令；PPO 更新循环不在这个文件里。
@@ -18,6 +20,8 @@
 | 模型选择、关节映射、契约 | [contract.py](../workspace/contract.py) | 数字模型编号、29 关节映射、续训一致性 |
 | 曲线与资源采样 | [telemetry.py](../workspace/telemetry.py) | TensorBoard 数据、吞吐、剩余内存/显存 |
 | 耗时兼容 | [timing.py](../workspace/timing.py) | runner 使用单调时钟，避免时间回拨导致负耗时 |
+
+上述依赖的源码副本也已加入当前仓库：[mjlab 1.6.0](../third_party/mjlab-v1.6.0/src/mjlab/)、[RSL-RL 5.4.2](../third_party/rsl_rl-v5.4.2/rsl_rl/)。可直接在 IDE 中搜索和阅读，入口及版本校验说明见 [third_party/README.md](../third_party/README.md)。副本包含全部 222 个 Python 文件，按源码仓库约定排除了网格和运行产物；修改副本不会自动影响训练。
 
 实际使用的环境、奖励、网络和 PPO 源码位于 `.runtime-path` 指向的环境中。当前是：
 
@@ -90,6 +94,9 @@ g1-mjlab-workspace/
 │   └── deploy/                               # JIT/ONNX 部署包
 ├── docs/                                     # 本流程、接口、参考适配说明
 ├── tests/                                    # CPU 回归检查
+├── third_party/                              # 固定版本依赖源码、许可证、校验清单
+│   ├── mjlab-v1.6.0/src/mjlab/                # 环境、任务、奖励、机器人与 runner
+│   └── rsl_rl-v5.4.2/rsl_rl/                  # PPO、网络、归一化与轨迹缓存
 └── gym_rl/                                   # 用户提供的参考项目
 ```
 

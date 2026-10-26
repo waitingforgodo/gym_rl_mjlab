@@ -12,6 +12,8 @@ from datetime import datetime
 from pathlib import Path
 
 from .contract import sha256
+from .configuration import apply_agent_overrides, effective_agent_sha256, validate_ppo_config
+from .recipes import apply_recipe
 
 
 def initialize(root):
@@ -48,19 +50,21 @@ def build_configs(root, profile_name, num_envs=None, motion=None, play=False, se
     cfg.scene.num_envs = num_envs or (1 if play else profile['num_envs'])
     cfg.seed = agent.seed = seed
     agent.logger, agent.upload_model, agent.save_interval = 'tensorboard', False, 100
-    # 用 algorithm.entropy_coef 这样的点号路径覆盖已存在字段，拼错即报错。
-    for dotted, value in profile.get('agent_overrides', {}).items():
-        obj = agent
-        parts = dotted.split('.')
-        for part in parts[:-1]:
-            obj = getattr(obj, part)
-        if not hasattr(obj, parts[-1]):
-            raise ValueError(f'Unknown agent parameter: {dotted}')
-        setattr(obj, parts[-1], value)
+    # 支持 actor.distribution_cfg.std_type 等字典路径，并在初始化 GPU 前
+    # 检查类型、采样批量整除和优化参数，避免无效配置长时间运行。
+    apply_agent_overrides(agent, profile.get('agent_overrides', {}))
+    validate_ppo_config(agent, cfg.scene.num_envs)
+    recipe = profile.get('recipe')
+    apply_recipe(cfg, agent, recipe, play=play)
     manifest = dict(schema=1, profile=profile_name, profile_sha256=sha256(profile_file), task=profile['task'],
                     agent_overrides=profile.get('agent_overrides', {}), motion_file=None, motion_sha256=None,
                     seed=seed, num_envs=cfg.scene.num_envs, control_dt=cfg.sim.mujoco.timestep*cfg.decimation,
-                    mjlab_version=importlib.metadata.version('mjlab'), rsl_rl_version=importlib.metadata.version('rsl-rl-lib'))
+                    mjlab_version=importlib.metadata.version('mjlab'), rsl_rl_version=importlib.metadata.version('rsl-rl-lib'),
+                    recipe=recipe, recipe_sha256=sha256(root / 'workspace/recipes.py') if recipe else None,
+                    effective_agent_sha256=effective_agent_sha256(agent),
+                    rollout_steps=agent.num_steps_per_env,
+                    samples_per_update=cfg.scene.num_envs * agent.num_steps_per_env,
+                    minibatch_size=cfg.scene.num_envs * agent.num_steps_per_env // agent.algorithm.num_mini_batches)
     if 'motion' in cfg.commands:
         # MotionLoader 按数组下标取数，不会自动按名字重排，也不会按 fps 调速。
         # 所以在创建 GPU 环境之前检查本地 NPZ 的顺序、形状和采样频率。

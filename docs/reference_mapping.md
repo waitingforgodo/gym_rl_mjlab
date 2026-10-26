@@ -14,6 +14,8 @@
 
 Isaac Lab 的 articulation、PhysX 接触、GPU buffer、AppLauncher、环境注册及 reset API 由 mjlab 的实体、MuJoCo/Warp、任务注册和 managers 替代。原奖励权重、摩擦/驱动随机化不能只改 import 即得到等价训练。这里先保留 mjlab 官方奖励和随机化；需要复现实验时应逐项对齐并另开 profile。
 
+新增的 `velocity_robust` 属于独立候选：在核对 mjlab 函数语义后，采用本地 robot_lab 的失败、髋/膝力矩和加速度系数作为待测起点；课程阈值属于本机工程设计，其余物理与随机化继续沿用 mjlab。`tracking*_robust` 保留官方跟踪环境与自适应采样，主要显式化学习配置和训练预算。来源、单位与消融要求见 [训练配置优化依据与对照实验](训练配置优化依据与对照实验.md)。
+
 两边虽都有 29 个关节，数组顺序未必相同。CSV 按资料中列出的 SDK 电机名称顺序解释，转换后按安装模型的 `joint_names` 保存。导出时单独记录自然关节顺序与动作目标顺序，不能把 rl_sar 的旧 `joint_mapping` 直接搬过来。
 
 资料中的旧 154 维观测和策略 `.pt` 不作为新策略输入契约。运行时从实际 observation manager 记录项名、维度、历史与缩放，从实际 action manager 记录 scale 和 offset，包含策略学到的观测归一化。

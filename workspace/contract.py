@@ -110,9 +110,14 @@ def validate_resume(saved, current):
     环境数允许通过命令行覆盖；其变化会改变 batch 和训练行为，但不改变
     模型输入输出维度。profile 文件本身的任何编辑仍会改变哈希并触发检查。
     """
-    for key in ('task', 'profile_sha256', 'agent_overrides', 'motion_sha256', 'mjlab_version', 'rsl_rl_version', 'control_dt'):
+    for key in ('task', 'profile_sha256', 'agent_overrides', 'motion_sha256', 'mjlab_version', 'rsl_rl_version', 'control_dt',
+                'recipe', 'recipe_sha256'):
         if saved.get(key) != current.get(key):
             raise ValueError(f'Resume contract differs: {key}. Start a separate experiment instead.')
+    # 旧模型没有配方字段，继续兼容；新配方还核对生效后的学习参数，避免
+    # 同一 profile 下换网络、采样长度或 PPO 参数而没有被发现。
+    if saved.get('recipe') and saved.get('effective_agent_sha256') != current.get('effective_agent_sha256'):
+        raise ValueError('Resume contract differs: effective_agent_sha256. Start a separate experiment instead.')
 
 
 def choose_parallelism(rows, headroom_mib=1024, ram_headroom_gib=2):

@@ -1,5 +1,6 @@
 """独立程序集成回归：异目录启动、参数校验、轻量导入和实际源码定位。"""
 import importlib.metadata
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -20,6 +21,7 @@ PROGRAMS = (
     'scripts/tools/import_motions.py',
     'scripts/tools/prepare_motion.py',
     'scripts/tools/show_sources.py',
+    'scripts/tools/compare_policies.py',
 )
 
 
@@ -78,6 +80,26 @@ assert callable(runtime.train) and callable(runtime.deploy_sim)
             with self.subTest(role=row['role']):
                 self.assertTrue(row['available'], row.get('path'))
                 self.assertTrue(row['symbols'])
+
+    def test_comparison_rejects_duplicate_checkpoints_and_mixed_tasks_before_loading_models(self):
+        """空模型文件足够测试前置契约；拒绝后不能触发 GPU 或 torch.load。"""
+        with tempfile.TemporaryDirectory() as folder:
+            paths = []
+            for index, task in enumerate(('velocity', 'tracking')):
+                run = Path(folder) / str(index)
+                run.mkdir()
+                checkpoint = run / 'model_0.pt'
+                checkpoint.touch()
+                (run / 'run_manifest.json').write_text(json.dumps(dict(
+                    task=task, profile=task, motion_file=None, motion_sha256=None)))
+                paths.append(str(checkpoint))
+            for selected, expected in (([paths[0], paths[0]], 'two different checkpoints'),
+                                       (paths, 'same task and reference motion')):
+                result = subprocess.run([sys.executable, str(ROOT / 'scripts/tools/compare_policies.py'),
+                                         '--checkpoints', *selected], capture_output=True, text=True, timeout=15)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertIn(expected, result.stderr)
+                self.assertNotIn('Traceback', result.stderr)
 
 
 if __name__ == '__main__':

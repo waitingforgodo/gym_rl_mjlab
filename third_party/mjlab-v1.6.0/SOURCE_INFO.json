@@ -1,0 +1,39 @@
+{
+  "distribution": "mjlab",
+  "version": "1.6.0",
+  "package": "mjlab",
+  "upstream_source_url": "https://github.com/mujocolab/mjlab/tree/v1.6.0/src/mjlab",
+  "copied_from": "installed_distribution",
+  "installed_package_root": "/home/godot/mjlab-isolated-v160/.venv/lib/python3.12/site-packages/mjlab",
+  "package_subdirectory": "src/mjlab",
+  "license": "Apache-2.0",
+  "vcs_info": {
+    "url": "https://github.com/mujocolab/mjlab.git",
+    "vcs_info": {
+      "vcs": "git",
+      "commit_id": "0fb8a681136be94ffc636a3dd423cabb97d91f10",
+      "requested_revision": "v1.6.0"
+    }
+  },
+  "source_file_count": 200,
+  "python_file_count": 192,
+  "source_bytes": 1475852,
+  "license_file_count": 1,
+  "excluded_suffix_counts": {
+    ".stl": 58
+  },
+  "exclusions": [
+    "compiled bytecode and caches",
+    "mesh assets, binary models and runtime outputs"
+  ],
+  "notes": "The copied source/text files are byte-identical to both the installed package and the official tagged source archive. Excluded mesh assets are not part of the comparison. For packages without direct_url metadata, no Git commit identity is asserted.",
+  "upstream_verification": {
+    "archive_url": "https://codeload.github.com/mujocolab/mjlab/tar.gz/refs/tags/v1.6.0",
+    "archive_sha256": "4b83ad61b2e6dea9f83e6f8d58663873c20beededea0b10e825097eca112f4c8",
+    "method": "byte_for_byte_comparison_of_all_retained_package_files",
+    "compared_file_count": 200,
+    "all_retained_files_match": true,
+    "license_matches_upstream": true,
+    "verified_date": "2026-10-26"
+  }
+}
