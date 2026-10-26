@@ -1,0 +1,8 @@
+{
+  "task": "Mjlab-Tracking-Flat-Unitree-G1",
+  "description": "BeyondMimic-style G1 tracking with state estimation, local NPZ only.",
+  "num_envs": 256,
+  "iterations": 10000,
+  "agent_overrides": {},
+  "source": "gym_rl/whole_body_tracking G1 task and mjlab v1.6.0 tracking baseline"
+}

@@ -1,0 +1,8 @@
+{
+  "task": "Mjlab-Velocity-Flat-Unitree-G1",
+  "description": "PPO entropy comparison from gym_rl robot_lab; keeps mjlab rewards, normalization and physics unchanged.",
+  "num_envs": 256,
+  "iterations": 3000,
+  "agent_overrides": {"algorithm.entropy_coef": 0.008},
+  "source": "gym_rl/robot_lab UnitreeG1RoughPPORunnerCfg entropy setting; not an exact IsaacLab reproduction"
+}

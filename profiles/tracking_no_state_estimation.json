@@ -1,0 +1,8 @@
+{
+  "task": "Mjlab-Tracking-Flat-Unitree-G1-No-State-Estimation",
+  "description": "Separate observation contract; do not resume a full-state checkpoint here.",
+  "num_envs": 256,
+  "iterations": 10000,
+  "agent_overrides": {},
+  "source": "gym_rl G1 WoStateEstimation task; mjlab official matching task"
+}

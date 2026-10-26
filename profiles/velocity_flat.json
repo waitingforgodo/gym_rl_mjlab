@@ -1,0 +1,8 @@
+{
+  "task": "Mjlab-Velocity-Flat-Unitree-G1",
+  "description": "Official v1.6.0 flat G1 baseline; no reward or observation changes.",
+  "num_envs": 256,
+  "iterations": 3000,
+  "agent_overrides": {},
+  "source": "mjlab v1.6.0 official G1 baseline"
+}
