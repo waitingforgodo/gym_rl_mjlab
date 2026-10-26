@@ -18,15 +18,62 @@ __pycache__/
 .venv/
 venv/
 
-# 参考资料含独立仓库与大型资产，不加入本项目源码历史。
-/gym_rl/
+# gym_rl 作为普通资料目录纳入；内部 Git 历史备份保存在 .cache/。
+/gym_rl/**/.git/
+*:Zone.Identifier
 
-# 训练产物和二进制模型统一在 outputs/ 管理，防止误放到源码目录。
+# 训练模型、推理模型和训练曲线不纳入源码仓库。
 *.pt
 *.pth
 *.onnx
 *.ckpt
+*.jit
+*.safetensors
 events.out.tfevents.*
+
+# gym_rl 只上传源码、文本配置、文档和许可证。
+/gym_rl/**/*.[sS][tT][lL]
+/gym_rl/**/*.[dD][aA][eE]
+/gym_rl/**/*.[oO][bB][jJ]
+/gym_rl/**/*.mtl
+/gym_rl/**/*.usd
+/gym_rl/**/*.usda
+/gym_rl/**/*.usdc
+/gym_rl/**/*.usdz
+/gym_rl/**/*.png
+/gym_rl/**/*.jpg
+/gym_rl/**/*.jpeg
+/gym_rl/**/*.gif
+/gym_rl/**/*.svg
+/gym_rl/**/*.bmp
+/gym_rl/**/*.webp
+/gym_rl/**/*.mp4
+/gym_rl/**/*.avi
+/gym_rl/**/*.csv
+/gym_rl/**/*.npy
+/gym_rl/**/*.npz
+/gym_rl/**/*.pkl
+/gym_rl/**/*.pickle
+/gym_rl/**/*.zarr/
+/gym_rl/**/*.zip
+/gym_rl/**/*.tar
+/gym_rl/**/*.tar.gz
+/gym_rl/**/*.tgz
+/gym_rl/**/*.so
+/gym_rl/**/*.a
+/gym_rl/**/*.o
+/gym_rl/**/.vscode/
+/gym_rl/**/.idea/
+/gym_rl/**/build/
+/gym_rl/**/dist/
+/gym_rl/**/logs/
+/gym_rl/**/runs/
+/gym_rl/**/recordings/
+/gym_rl/**/videos/
+/gym_rl/**/wandb/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
 
 # 编辑器和操作系统生成的临时文件。
 .DS_Store

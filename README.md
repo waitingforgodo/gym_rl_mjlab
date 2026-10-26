@@ -2,6 +2,8 @@
 
 完整代码位置、独立 Python 程序和从训练到仿真部署的逐步说明，见 [完整训练与仿真部署教程](docs/training_to_sim_deployment.md)。实际实现已拆分为 `workspace/training.py`、`inference.py`、`exporting.py`、`deployment.py`，每个阶段有中文注释；独立入口位于 `scripts/reinforcement_learning/rsl_rl/` 和 `scripts/deploy/`。环境、奖励和 PPO 的实际源码可运行 `bash g1.sh show-sources` 定位。
 
+`gym_rl/` 参考源码、文本配置、文档和许可证纳入本仓库；权重、网格、动作数据和运行中间文件保留在本地，不上传。目录说明见 [gym_rl 参考资料](gym_rl/README.md)。
+
 面向 Unitree G1 29 自由度，先做仿真，保留真机配置。复用你已验证的 `~/mjlab-isolated-v160/.venv`，目标版本固定为 mjlab 1.6.0；安装脚本只复制本工作空间，不安装依赖、不修改旧项目。
 
 ## 常用脚本与完整中文讲解
