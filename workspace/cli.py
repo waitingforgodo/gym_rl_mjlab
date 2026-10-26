@@ -44,6 +44,8 @@ def parser():
                      else '/mnt/d/reference/reinforce/gym_rl')
     prep = sub.add_parser('prepare-motion', help='CPU kinematics: 60 Hz CSV -> control-rate NPZ')
     prep.add_argument('name', choices=['dance_102', 'gangnam_style'])
+    amp_prep = sub.add_parser('prepare-amp-motion', help='Convert the local robot_lab AMP dance NPZ to the current G1 model')
+    amp_prep.add_argument('--source', help='Source AMP NPZ; defaults to the local gym_rl dance sample')
     inspect = sub.add_parser('inspect-motion')
     inspect.add_argument('file')
     for command in ('train', 'resume', 'play', 'evaluate', 'export'):
@@ -248,6 +250,11 @@ def main():
     elif command == 'inspect-motion':
         from .motion import inspect
         emit(inspect(Path(args.file).expanduser().resolve()))
+    elif command == 'prepare-amp-motion':
+        from .runtime import initialize
+        from .amp.conversion import prepare_amp_motion
+        initialize(ROOT)
+        emit(prepare_amp_motion(ROOT, args.source))
     elif command == 'benchmark':
         with training_lock():
             emit(benchmark(args))

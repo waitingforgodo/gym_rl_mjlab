@@ -1,5 +1,7 @@
 # 常用脚本
 
+AMP 舞蹈入口：`17_prepare_amp_motion.sh` 转换本地专家数据，`18_train_amp_dance.sh` 使用独立 AMP 任务训练；默认 `amp_dance_2048`、2048 环境、30000 更新。可在末尾加 `--iterations 100` 做短训，或用 `--motion` 选择其他已转换的标准 NPZ。完整中文说明见 [AMP 舞蹈训练与仿真部署](../docs/AMP舞蹈训练与仿真部署.md)。
+
 需要逐个查看 Python 程序时，训练/续训/回放/评估/导出入口在 `reinforcement_learning/rsl_rl/`，仿真部署入口在 `deploy/deploy_sim.py`。用 `bash g1.sh --python 程序路径 参数...` 启动；核心实现和完整流程见 [训练到仿真部署教程](../docs/training_to_sim_deployment.md)。原有编号 shell 脚本继续可用。
 
 这些脚本安装后位于 `~/g1-mjlab-workspace/scripts/`，即当前独立 mjlab 工作空间内。可以从任何目录执行；统一用 `bash 脚本路径`，不需要手动激活环境或修改执行权限。
@@ -20,6 +22,8 @@ bash ~/g1-mjlab-workspace/scripts/06_evaluate_forward.sh
 bash ~/g1-mjlab-workspace/scripts/07_tensorboard.sh
 ```
 
+AMP 与 BeyondMimic 的容量扫描和三种任务实训记录见 [2048 并行验证](../docs/并行规模验证与2048训练.md)。
+
 ## 全部入口
 
 - `00_check.sh`：依赖/资源清单、CPU 测试、4 环境 32 步检查。
@@ -33,12 +37,15 @@ bash ~/g1-mjlab-workspace/scripts/07_tensorboard.sh
 - `08_export.sh`：导出 JIT/ONNX/部署清单并进行内置检查。
 - `09_deploy_sim.sh`：指定导出包，运行同后端仿真回归。
 - `10_import_motions.sh`：复制并转换 dance_102 和 gangnam_style，已有 NPZ 只检查。
-- `11_train_tracking.sh`：另起 dance_102 动作跟踪，暂用 256 环境。
+- `11_train_tracking.sh`：另起 dance_102 动作跟踪，默认 2048 环境，原 tracking profile 保留。
 - `12_summary.sh`：读取最新运行的曲线末值、吞吐及资源记录。
 - `13_resume_legacy.sh`：从旧环境的 g1_continue 迁入。迁入后用 03。
 - `14_show_config.sh`：打印实际保存的完整训练配置和运行清单。
 - `15_train_robust.sh`：新的行走研究候选，默认 2048 环境、10000 更新。
-- `16_train_tracking_robust.sh`：新的跟踪研究候选，默认 256 环境、30000 更新；可传 `--profile tracking_no_state_estimation_robust`。
+- `16_train_tracking_robust.sh`：新的跟踪研究候选，默认 `tracking_robust_2048`、2048 环境、30000 更新；无状态估计版本传 `--profile tracking_no_state_estimation_robust_2048`。
+
+- `17_prepare_amp_motion.sh`：将本地 AMP 舞蹈转换为当前 G1 标准 NPZ，相同来源的已有数据校验后复用。
+- `18_train_amp_dance.sh`：默认 `amp_dance_2048`、2048 环境、30000 更新，包含放大的判别器批量和回放池。
 
 新配方的来源、中文参数说明和公平对照步骤见 [训练配置优化依据与对照实验](../docs/训练配置优化依据与对照实验.md)。使用 `bash g1.sh --python scripts/tools/compare_policies.py --help` 查看多策略比较工具。
 

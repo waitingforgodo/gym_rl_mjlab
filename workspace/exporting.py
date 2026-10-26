@@ -88,7 +88,10 @@ def export_bundle(root, args, checkpoint):
             import shutil
             shutil.copyfile(manifest['motion_file'], destination / 'motion.npz')
             manifest['motion_file'] = str(destination / 'motion.npz')
-            manifest['tracking_anchor_body'] = base.command_manager.get_term('motion').cfg.anchor_body_name
+            if 'motion' in base.command_manager.active_terms:
+                manifest['tracking_anchor_body'] = base.command_manager.get_term('motion').cfg.anchor_body_name
+            # AMP 的参考数据仅供本后端的参考初态复位；JIT/ONNX 只有 actor，
+            # 不导出判别器，不需要 time_step 或逐帧参考目标作为策略输入。
         write_json(destination / 'manifest.json', manifest)
         write_json(destination / 'hardware_template.json', dict(enabled=False, robot='Unitree G1 29 DoF',
                     source='manifest.json', network_interface=None, dds_domain=None,

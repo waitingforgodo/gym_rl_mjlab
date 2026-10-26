@@ -22,6 +22,7 @@ PROGRAMS = (
     'scripts/tools/prepare_motion.py',
     'scripts/tools/show_sources.py',
     'scripts/tools/compare_policies.py',
+    'scripts/tools/prepare_amp_motion.py',
 )
 
 

@@ -1,0 +1,58 @@
+{
+  "task": "Mjlab-Tracking-Flat-Unitree-G1",
+  "description": "动作模仿研究候选：保留完整状态观测和失败片段自适应采样，采用较完整训练预算。（2048 并行版本，保留原配置供已有模型续训。）",
+  "recipe": "tracking_robust_v1",
+  "num_envs": 2048,
+  "iterations": 30000,
+  "agent_overrides": {
+    "actor.hidden_dims": [
+      512,
+      256,
+      128
+    ],
+    "critic.hidden_dims": [
+      512,
+      256,
+      128
+    ],
+    "actor.activation": "elu",
+    "critic.activation": "elu",
+    "actor.obs_normalization": true,
+    "critic.obs_normalization": true,
+    "actor.distribution_cfg.init_std": 1.0,
+    "actor.distribution_cfg.std_type": "log",
+    "num_steps_per_env": 24,
+    "algorithm.optimizer": "adam",
+    "algorithm.value_loss_coef": 1.0,
+    "algorithm.use_clipped_value_loss": true,
+    "algorithm.clip_param": 0.2,
+    "algorithm.num_learning_epochs": 5,
+    "algorithm.num_mini_batches": 4,
+    "algorithm.learning_rate": 0.001,
+    "algorithm.schedule": "adaptive",
+    "algorithm.gamma": 0.99,
+    "algorithm.lam": 0.95,
+    "algorithm.desired_kl": 0.01,
+    "algorithm.max_grad_norm": 1.0,
+    "algorithm.normalize_advantage_per_mini_batch": false,
+    "algorithm.entropy_coef": 0.005,
+    "save_interval": 500
+  },
+  "source": "本地 gym_rl + Unitree/mjlab 公开配置；详见 docs/训练配置优化依据与对照实验.md",
+  "_notes": {
+    "status": "研究候选配置；通过同协议评估后才能判断是否优于基线，不声明业界全局最优。",
+    "network": "512/256/128 + ELU：保留 gym_rl、Unitree 和 mjlab 的共同网络规模，兼顾表达能力与这台 8 GiB 显卡的开销。",
+    "normalization": "保留 mjlab actor/critic 的观测归一化；Isaac 的手工缩放和观测布局不同，不能直接照搬 False。",
+    "std_type": "log 是 RSL-RL 5.4.2 原生选项：学习 log_std 后取 exp 得到正标准差。与旧 scalar 参数化不同，另起实验。",
+    "rollout": "每环境 24 步；2048 环境时每轮 49152 样本，4 个 minibatch，每个 12288 样本。改变 num_envs 不等于只改变速度。",
+    "ppo": "clip=0.2、5 epochs、4 minibatches、gamma=0.99、lambda=0.95、KL=0.01、梯度裁剪=1.0 来自公开实现的共同基线。",
+    "learning_rate": "起始 1e-3，使用原生 KL adaptive 调节；不是固定以 1e-3 训练到底。",
+    "advantages": "在整个 rollout 上归一化优势；不因 minibatch 很小而分别重估统计。",
+    "physics": "保留原机器人、PD、动作尺度、关节顺序、0.005 s 物理步和 0.02 s 策略步。",
+    "resume": "旧 profile 不修改；此新实验还校验 recipes.py 哈希和生效的学习参数，避免无记录地更换课程或代价。",
+    "entropy": "0.005 与本地 whole_body_tracking 和官方 mjlab tracking 一致。",
+    "budget": "2048 环境、30000 次更新为正式训练候选预算；每 500 次保存。并行容量与吞吐验证不等于舞蹈收敛。",
+    "base_profile": "tracking_robust",
+    "parallelism": "2048 环境 × 每环境 24 步 = 每轮 49152 条转移；4 个 PPO minibatch，每个 12288。与 256 版本分别建模和评估。"
+  }
+}

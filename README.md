@@ -1,5 +1,9 @@
 # G1 · mjlab 仿真训练与部署工作空间
 
+AMP 与 BeyondMimic 快捷训练现采用独立的 2048 环境配置，原 256 配置保留以兼容旧模型。容量扫描、配置变化及训练记录见 [2048 并行验证](docs/并行规模验证与2048训练.md)。
+
+AMP 舞蹈已新增独立实现，入口为 `scripts/17_prepare_amp_motion.sh` 和 `scripts/18_train_amp_dance.sh`。源码、判别器原理、配置和完整流程见 [AMP 舞蹈训练与仿真部署](docs/AMP舞蹈训练与仿真部署.md)。
+
 新增的行走、动作模仿候选配置及公开来源对照见 [训练配置优化依据与对照实验](docs/训练配置优化依据与对照实验.md)。新行走入口为 `scripts/15_train_robust.sh`，跟踪入口为 `scripts/16_train_tracking_robust.sh`；旧基线保留，收益需相同协议评估确认。
 
 完整代码位置、独立 Python 程序和从训练到仿真部署的逐步说明，见 [完整训练与仿真部署教程](docs/training_to_sim_deployment.md)。实际实现已拆分为 `workspace/training.py`、`inference.py`、`exporting.py`、`deployment.py`，每个阶段有中文注释；独立入口位于 `scripts/reinforcement_learning/rsl_rl/` 和 `scripts/deploy/`。环境、奖励和 PPO 的实际源码可运行 `bash g1.sh show-sources` 定位。

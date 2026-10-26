@@ -33,6 +33,9 @@ def initialize(root):
     from mjlab.utils.torch import configure_torch_backends
     configure_torch_backends()
     import mjlab.tasks  # noqa: F401
+    # 本地 AMP 是独立任务，注册到当前进程，不修改 site-packages。
+    from .amp.tasks import register
+    register()
     return torch
 
 
@@ -65,9 +68,12 @@ def build_configs(root, profile_name, num_envs=None, motion=None, play=False, se
                     rollout_steps=agent.num_steps_per_env,
                     samples_per_update=cfg.scene.num_envs * agent.num_steps_per_env,
                     minibatch_size=cfg.scene.num_envs * agent.num_steps_per_env // agent.algorithm.num_mini_batches)
-    if 'motion' in cfg.commands:
+    is_amp = profile.get('learning_method') == 'amp'
+    if 'motion' in cfg.commands or is_amp:
         # MotionLoader 按数组下标取数，不会自动按名字重排，也不会按 fps 调速。
         # 所以在创建 GPU 环境之前检查本地 NPZ 的顺序、形状和采样频率。
+        if is_amp and not motion:
+            motion = root / profile['default_motion']
         if not motion:
             raise ValueError('Tracking needs --motion motions/processed/dance_102.npz')
         from mjlab.entity import Entity
@@ -75,7 +81,24 @@ def build_configs(root, profile_name, num_envs=None, motion=None, play=False, se
         path = Path(motion).expanduser().resolve()
         robot = Entity(cfg.scene.entities['robot'])
         inspect(path, robot.joint_names, robot.body_names, 1 / manifest['control_dt'])
-        cfg.commands['motion'].motion_file = str(path)
+        if is_amp:
+            from .amp.algorithm import validate_amp_config
+            cfg.events['amp_reset'].params['motion_file'] = str(path)
+            agent.algorithm.amp['motion_file'] = str(path)
+            agent.algorithm.amp['control_dt'] = manifest['control_dt']
+            validate_amp_config(agent.algorithm.amp)
+            # 单独记录 AMP 实现哈希，不影响旧 PPO/BeyondMimic 的配方契约。
+            import hashlib
+            files = sorted((root / 'workspace/amp').glob('*.py'))
+            digest = hashlib.sha256()
+            for file in files:
+                digest.update(file.name.encode())
+                digest.update(file.read_bytes())
+            manifest.update(learning_method='amp', amp_source_sha256=digest.hexdigest(),
+                            amp_feature_dim=83, amp_transition_dim=166,
+                            reference_usage='style_discriminator_and_reference_state_initialization')
+        else:
+            cfg.commands['motion'].motion_file = str(path)
         manifest.update(motion_file=str(path), motion_sha256=sha256(path))
     elif motion:
         raise ValueError('Velocity tracking does not consume a reference motion')

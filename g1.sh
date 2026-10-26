@@ -25,7 +25,7 @@ export TMPDIR="$ROOT/.cache/tmp"
 export MPLCONFIGDIR="$ROOT/.cache/matplotlib"
 export NUMBA_CACHE_DIR="$ROOT/.cache/numba"
 # 动作转换用 CPU 正运动学；纯文件导入与检查也不需要访问显卡。
-if [ "${1:-}" = prepare-motion ] || [ "${1:-}" = import-reference ] || [ "${1:-}" = inspect-motion ]; then
+if [ "${1:-}" = prepare-motion ] || [ "${1:-}" = prepare-amp-motion ] || [ "${1:-}" = import-reference ] || [ "${1:-}" = inspect-motion ]; then
   export CUDA_VISIBLE_DEVICES=""
 fi
 cd "$ROOT"
@@ -37,7 +37,7 @@ if [ "${1:-}" = --python ]; then
   shift
   [ "$#" -gt 0 ] || { echo 'Usage: g1.sh --python SCRIPT.py [arguments...]' >&2; exit 2; }
   case "$1" in
-    */import_motions.py|*/prepare_motion.py) export CUDA_VISIBLE_DEVICES="" ;;
+    */import_motions.py|*/prepare_motion.py|*/prepare_amp_motion.py) export CUDA_VISIBLE_DEVICES="" ;;
   esac
   exec nice -n 10 "$RUNTIME/.venv/bin/python" "$@"
 fi

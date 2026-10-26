@@ -1,0 +1,30 @@
+{
+  "task": "Workspace-AMP-Dance-Flat-Unitree-G1",
+  "learning_method": "amp",
+  "description": "G1 舞蹈 AMP：PPO + 连续状态判别器，不向 actor 输入参考轨迹或时间进度。（2048 并行版本，保留原配置供已有模型续训。）",
+  "default_motion": "motions/processed/amp_dance.npz",
+  "num_envs": 2048,
+  "iterations": 30000,
+  "agent_overrides": {
+    "algorithm.learning_rate": 0.0003,
+    "algorithm.entropy_coef": 0.01,
+    "save_interval": 500,
+    "algorithm.amp.batch_size": 4096,
+    "algorithm.amp.updates_per_iteration": 8,
+    "algorithm.amp.replay_capacity": 400000
+  },
+  "_notes": {
+    "dataset": "默认 robot_lab 的 g1_dance1_subject2_30.npz，先执行 scripts/17_prepare_amp_motion.sh；也可用 --motion 指定本项目标准 NPZ。",
+    "algorithm": "RSL-RL 5.4.2 PPO + 本地 AmpPPO 扩展；BCE 判别、专家输入梯度惩罚、logit 正则和历史策略回放。",
+    "features": "每帧 83 维，连续两帧共 166 维；移除世界 xy 与航向，使用与专家完全相同的特征函数。",
+    "policy": "actor/critic 各 96 维本体观测，29 维关节动作；不输入专家目标、动作帧索引或判别器特征。",
+    "rewards": "风格奖励 2*softplus(logit)*0.02，叠加存活、失败、动作变化和关节极限约束；失败当步风格奖励为零。",
+    "physics": "复用 G1 的 mjlab 模型和 PD，0.005 s 物理步、decimation=4、0.02 s 策略步。",
+    "reset": "训练从随机参考状态复位，回放从参考第 0 帧复位；只改变初态，之后由策略和物理执行。",
+    "budget": "2048 环境、30000 次更新为正式训练候选预算；每 500 次保存。并行容量与吞吐验证不等于舞蹈收敛。",
+    "scope": "单 GPU、单 NPZ 专家库的舞蹈风格学习；尚不支持多 GPU 同步判别器或在线切换多动作。",
+    "base_profile": "amp_dance",
+    "parallelism": "2048 环境 × 每环境 24 步 = 每轮 49152 条转移；4 个 PPO minibatch，每个 12288。与 256 版本分别建模和评估。",
+    "amp_scaling": "相对 256 配置，rollout 增大 8 倍；判别采样总量由 1024×4=4096 增为 4096×8=32768，回放池由 50000 增至 400000，维持约 8 轮历史及采样比例。这是待验证工程配置，不保证与小批量学习完全等价。"
+  }
+}
