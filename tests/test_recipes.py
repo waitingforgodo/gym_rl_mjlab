@@ -27,7 +27,7 @@ class RecipeTests(unittest.TestCase):
         return cfg, agent
 
     def test_new_velocity_profile_keeps_physics_and_adds_three_explicit_costs(self):
-        cfg, agent = self.configs('velocity_robust')
+        cfg, agent = self.configs('velocity_robust_4096')
         old, _ = self.configs('velocity_flat')
         self.assertEqual(cfg.sim.mujoco.timestep * cfg.decimation, .02)
         self.assertEqual(set(cfg.rewards) - set(old.rewards), {'failure_penalty', 'leg_torque_l2', 'leg_acc_l2'})
@@ -37,7 +37,7 @@ class RecipeTests(unittest.TestCase):
         self.assertEqual(agent.algorithm.entropy_coef, .008)
 
     def test_curriculum_uses_control_steps_and_restored_counter(self):
-        cfg, agent = self.configs('velocity_robust')
+        cfg, agent = self.configs('velocity_robust_4096')
         term = cfg.curriculum['command_vel']
         self.assertEqual([s['step'] for s in term.params['velocity_stages']], [0, 36000, 96000])
         for updates, expected_x in ((0, (-.5, 1.)), (1499, (-.5, 1.)), (1500, (-1., 1.5)), (4000, (-1.5, 2.))):
@@ -48,7 +48,7 @@ class RecipeTests(unittest.TestCase):
             self.assertEqual(command.cfg.ranges.lin_vel_x, expected_x)
 
     def test_play_uses_final_velocity_ranges_without_a_training_curriculum(self):
-        cfg, _ = self.configs('velocity_robust', play=True)
+        cfg, _ = self.configs('velocity_robust_4096', play=True)
         self.assertEqual(cfg.commands['twist'].ranges.lin_vel_x, (-1.5, 2.))
         self.assertEqual(cfg.commands['twist'].ranges.lin_vel_y, (-1., 1.))
         self.assertNotIn('command_vel', cfg.curriculum)
@@ -70,6 +70,15 @@ class RecipeTests(unittest.TestCase):
         for name in ('typo', 'tracking_robust_v1'):
             with self.subTest(name=name), self.assertRaises(ValueError):
                 apply_recipe(cfg, agent, name)
+
+    def test_supermimic_recipe_matches_paper_environment_differences(self):
+        cfg, _ = self.configs('supermimic_4096')
+        self.assertNotIn('push_robot', cfg.events)
+        self.assertNotIn('self_collisions', cfg.rewards)
+        self.assertNotIn('ee_body_pos', cfg.terminations)
+        self.assertIn('motion_done', cfg.terminations)
+        self.assertEqual(cfg.rewards['joint_limit'].weight, -2.)
+        self.assertEqual(cfg.commands['motion'].sampling_mode, 'adaptive')
 
 
 if __name__ == '__main__':

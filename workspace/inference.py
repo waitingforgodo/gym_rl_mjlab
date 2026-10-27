@@ -21,7 +21,10 @@ def load_for_inference(root, args, checkpoint, num_envs=1):
     seed = getattr(args, 'evaluation_seed', None)
     if seed is None:
         seed = saved.get('seed', 42) if saved else 42
-    spec, cfg, agent, manifest = build_configs(root, profile, num_envs, motion, play=True, seed=seed)
+    spec, cfg, agent, manifest = build_configs(
+        root, profile, num_envs, motion, play=True, seed=seed,
+        profile_spec=saved.get('profile_spec') if saved else None,
+        profile_sha256=saved.get('profile_sha256') if saved else None)
     if saved:
         validate_resume(saved, manifest)
     from .evaluation import configure_fixed_velocity, velocity_protocol

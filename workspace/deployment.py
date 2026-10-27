@@ -28,7 +28,10 @@ def deploy_sim(root, args):
     initialize(root)
     # 2. 跟踪任务从包内读参考轨迹；速度任务没有 motion.npz。
     motion = str(bundle / 'motion.npz') if manifest.get('motion_file') else None
-    _, cfg, agent, current = build_configs(root, manifest['profile'], 1, motion, play=True, seed=manifest['seed'])
+    _, cfg, agent, current = build_configs(
+        root, manifest['profile'], 1, motion, play=True, seed=manifest['seed'],
+        profile_spec=manifest.get('profile_spec'),
+        profile_sha256=manifest.get('profile_sha256'))
     validate_resume(manifest, current)
     # 这里只构造环境，不构造 PPO runner，部署测试不依赖训练期优化器。
     from mjlab.envs import ManagerBasedRlEnv

@@ -23,6 +23,10 @@ PROGRAMS = (
     'scripts/tools/show_sources.py',
     'scripts/tools/compare_policies.py',
     'scripts/tools/prepare_amp_motion.py',
+    'scripts/supermimic/train.py',
+    'scripts/supermimic/play.py',
+    'scripts/supermimic/export.py',
+    'scripts/supermimic/deploy_sim.py',
 )
 
 

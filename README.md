@@ -1,6 +1,6 @@
 # G1 · mjlab 仿真训练与部署工作空间
 
-AMP 与 BeyondMimic 快捷训练现采用独立的 2048 环境配置，原 256 配置保留以兼容旧模型。容量扫描、配置变化及训练记录见 [2048 并行验证](docs/并行规模验证与2048训练.md)。
+所有从零训练快捷脚本现统一采用独立的 **4096 环境配置**；重复的 2048 profile 已删除，带嵌入配置清单的旧模型仍可回放。AMP 与 BeyondMimic 的实际容量结果见 [4096 并行配置与容量结果](docs/4096并行配置与容量结果.md)。SuperMimic 的独立论文复现入口见 [SuperMimic 论文复现与仿真部署](docs/SuperMimic论文复现与仿真部署.md)。
 
 AMP 舞蹈已新增独立实现，入口为 `scripts/17_prepare_amp_motion.sh` 和 `scripts/18_train_amp_dance.sh`。源码、判别器原理、配置和完整流程见 [AMP 舞蹈训练与仿真部署](docs/AMP舞蹈训练与仿真部署.md)。
 
@@ -61,7 +61,7 @@ bash ~/g1-mjlab-workspace/g1.sh benchmark --envs 128 256 512 --iterations 30
 
 ### 计时修正与下一档测试
 
-2026-10-23 的用户实测中，128/256/512 环境都完成了 30 次更新，吞吐中位数分别为 4630/8851/17486 步/秒，512 档最小剩余显存约 6.60 GiB、WSL 可用内存约 11.64 GiB。短测显示可探索 1024、2048，但尚未证明更高并行数或长时间训练稳定。
+2026-10-23 的早期实测中，128/256/512 环境都完成了 30 次更新；随后又验证了 1024/2048。2026-10-27 已进一步完成 AMP 与两种 BeyondMimic 的 4096 环境短测，详见 [4096 并行结果](docs/4096并行配置与容量结果.md)。短测仍不证明长时间温度或收敛质量。
 
 同一份日志的 128 档出现负的 `Perf/learning_time` 和 FPS。固定依赖 RSL-RL 5.4.2 使用 `time.time()` 测耗时，系统时间回拨可以造成这种现象；仅凭本日志不能确认回拨来源。现在训练入口仅在当前进程的 RSL-RL runner 模块内，把耗时计时替换为 `perf_counter()`，结束时恢复绑定，不修改标准库、依赖安装文件或系统时钟。TensorBoard 的时间戳保留真实日期时间。
 
@@ -69,7 +69,7 @@ bash ~/g1-mjlab-workspace/g1.sh benchmark --envs 128 256 512 --iterations 30
 
 ```bash
 bash /mnt/c/Users/17599/Documents/Codex/g1-mjlab-workspace/apply_update.sh
-bash ~/g1-mjlab-workspace/g1.sh benchmark --envs 512 1024 2048 --iterations 100
+bash ~/g1-mjlab-workspace/g1.sh benchmark --envs 1024 2048 4096 --iterations 100
 ```
 
 新结果必须有 `timing_valid: true` 才参与推荐。即使中位数为正，存在负耗时、非有限值或不完整计时的测量也会被标记并排除。100 次比原来的 30 次更适合做初步比较，仍不代表长期温度和桌面响应性验证。
@@ -77,7 +77,7 @@ bash ~/g1-mjlab-workspace/g1.sh benchmark --envs 512 1024 2048 --iterations 100
 ## 3. 平地速度跟踪：训练行走
 
 ```bash
-bash ~/g1-mjlab-workspace/g1.sh train --profile velocity_flat --envs 256 --iterations 3000 --name walk_256
+bash ~/g1-mjlab-workspace/g1.sh train --profile velocity_flat_4096 --envs 4096 --iterations 3000 --name walk_4096
 bash ~/g1-mjlab-workspace/g1.sh play --checkpoint latest
 bash ~/g1-mjlab-workspace/g1.sh evaluate --checkpoint latest --envs 16 --seconds 60
 ```
@@ -85,7 +85,7 @@ bash ~/g1-mjlab-workspace/g1.sh evaluate --checkpoint latest --envs 16 --seconds
 `256` 是起始候选，按 benchmark 的结果替换。3000 次是一个观察节点，不是收敛承诺。需要继续就执行：
 
 ```bash
-bash ~/g1-mjlab-workspace/g1.sh resume --checkpoint latest --envs 256 --iterations 3000 --name walk_continue
+bash ~/g1-mjlab-workspace/g1.sh resume --checkpoint latest --envs 4096 --iterations 3000 --name walk_continue
 ```
 
 `--iterations` 始终表示本次新增的 PPO 更新次数。续训写入新运行目录，保留旧模型。改变并行数会改变每轮采样总数及优化行为，支持加载不表示学习曲线完全一致。每轮默认 24 步/环境，因此 128/256/512 环境对应 3072/6144/12288 条状态转移。
@@ -111,9 +111,9 @@ bash ~/g1-mjlab-workspace/g1.sh resume --checkpoint g1_continue --legacy-velocit
 bash ~/g1-mjlab-workspace/g1.sh import-reference
 bash ~/g1-mjlab-workspace/g1.sh prepare-motion dance_102
 bash ~/g1-mjlab-workspace/g1.sh prepare-motion gangnam_style
-bash ~/g1-mjlab-workspace/g1.sh self-check --profile tracking --motion ~/g1-mjlab-workspace/motions/processed/dance_102.npz
-bash ~/g1-mjlab-workspace/g1.sh benchmark --profile tracking --motion ~/g1-mjlab-workspace/motions/processed/dance_102.npz --envs 128 256 512 --iterations 30
-bash ~/g1-mjlab-workspace/g1.sh train --profile tracking --motion ~/g1-mjlab-workspace/motions/processed/dance_102.npz --envs 256 --iterations 10000 --name dance_102
+bash ~/g1-mjlab-workspace/g1.sh self-check --profile tracking_4096 --motion ~/g1-mjlab-workspace/motions/processed/dance_102.npz
+bash ~/g1-mjlab-workspace/g1.sh benchmark --profile tracking_4096 --motion ~/g1-mjlab-workspace/motions/processed/dance_102.npz --envs 2048 4096 --iterations 30
+bash ~/g1-mjlab-workspace/g1.sh train --profile tracking_4096 --motion ~/g1-mjlab-workspace/motions/processed/dance_102.npz --envs 4096 --iterations 10000 --name dance_102
 ```
 
 默认优先读取本工作空间的 `gym_rl/`，没有该目录时回退到 `/mnt/d/reference/reinforce/gym_rl`；也可加 `--source /参考目录`。只复制两份 CSV，来源位置和哈希保存在 `motions/reference_sources.json`。不执行 Isaac Lab 代码，也不直接使用资料中的旧策略。
@@ -140,9 +140,9 @@ bash ~/g1-mjlab-workspace/g1.sh deploy-sim --bundle "$BUNDLE" --headless --secon
 
 ## 配置与结果
 
-- `profiles/velocity_flat.json`：官方平地基线，建议先用它。
-- `profiles/velocity_gym_ppo.json`：单独的对比实验，仅把 entropy_coef 调为资料 robot_lab 的 0.008，保留 mjlab 的观测归一化及其余默认值，不保证更优。
-- `profiles/tracking*.json`：官方 G1 动作跟踪和无状态估计观测版本。
+- `profiles/velocity_flat_4096.json`：当前快捷脚本使用的官方平地基线；旧 `velocity_flat` 保留兼容。
+- `profiles/velocity_gym_ppo_4096.json`：4096 环境的 entropy=0.008 对比实验，不保证更优。
+- `profiles/tracking*_4096.json`：当前完整状态/无状态估计动作跟踪配置；旧文件保留兼容。
 - `outputs/runs/<时间_profile_名字>`：正式训练、参数快照、清单、资源采样及模型。
 - `outputs/benchmarks`、`outputs/evaluations`、`outputs/deploy`：并行对比、评估、导出包。
 

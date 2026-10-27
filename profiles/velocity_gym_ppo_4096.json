@@ -1,0 +1,14 @@
+{
+  "task": "Mjlab-Velocity-Flat-Unitree-G1",
+  "description": "gym_rl entropy comparison with the locally validated 4096-environment batch.",
+  "num_envs": 4096,
+  "iterations": 3000,
+  "agent_overrides": {
+    "algorithm.entropy_coef": 0.008
+  },
+  "source": "gym_rl/robot_lab UnitreeG1RoughPPORunnerCfg entropy setting; not an exact IsaacLab reproduction",
+  "_notes": {
+    "compatibility": "velocity_gym_ppo 保持不变以兼容旧 checkpoint；新训练使用本独立 profile。",
+    "parallelism": "4096 环境 × 每环境 24 步 = 每轮 98304 条转移。"
+  }
+}

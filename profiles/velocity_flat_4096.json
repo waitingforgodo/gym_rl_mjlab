@@ -1,0 +1,12 @@
+{
+  "task": "Mjlab-Velocity-Flat-Unitree-G1",
+  "description": "Official v1.6.0 flat G1 baseline with the locally validated 4096-environment batch.",
+  "num_envs": 4096,
+  "iterations": 3000,
+  "agent_overrides": {},
+  "source": "mjlab v1.6.0 official G1 baseline",
+  "_notes": {
+    "compatibility": "velocity_flat 保持不变以兼容旧 checkpoint；新训练使用本独立 profile。",
+    "parallelism": "4096 环境 × 每环境 24 步 = 每轮 98304 条转移；4 个 PPO minibatch，每个 24576。"
+  }
+}

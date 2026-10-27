@@ -1,0 +1,25 @@
+{
+  "task": "Workspace-AMP-Dance-Flat-Unitree-G1",
+  "learning_method": "amp",
+  "description": "G1 舞蹈 AMP：PPO + 连续状态判别器。（4096 并行版本）",
+  "default_motion": "motions/processed/amp_dance.npz",
+  "num_envs": 4096,
+  "iterations": 30000,
+  "agent_overrides": {
+    "algorithm.learning_rate": 0.0003,
+    "algorithm.entropy_coef": 0.01,
+    "save_interval": 500,
+    "algorithm.amp.batch_size": 4096,
+    "algorithm.amp.updates_per_iteration": 8,
+    "algorithm.amp.replay_capacity": 400000
+  },
+  "_notes": {
+    "dataset": "默认使用 motions/processed/amp_dance.npz；也可用 --motion 指定标准 NPZ。",
+    "algorithm": "RSL-RL 5.4.2 PPO + 本地 AmpPPO；BCE 判别、专家输入梯度惩罚、logit 正则和历史策略回放。",
+    "policy": "actor/critic 各 96 维本体观测，29 维动作；不输入专家目标、动作帧索引或判别器特征。",
+    "compatibility": "旧 2048 profile 已从源码移除；已有正式运行依靠 run_manifest.json 的嵌入快照回放。",
+    "budget": "4096 环境、30000 次更新为正式训练候选预算；每 500 次保存。",
+    "parallelism": "4096 环境 × 每环境 24 步 = 每轮 98304 条转移；4 个 PPO minibatch，每个 24576。",
+    "amp_scaling": "4096 容量短测使用 batch=4096、每轮 8 次判别更新、400000 回放容量；正式训练仍需观察判别准确率、风格奖励和存活情况。"
+  }
+}

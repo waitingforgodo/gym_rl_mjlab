@@ -2,7 +2,7 @@
 
 当前工作空间新增独立的 **AMP（Adversarial Motion Priors，对抗动作先验）** 实现，复用 mjlab 1.6.0 和 RSL-RL 5.4.2，无需安装 Isaac Lab/skrl。原有 BeyondMimic `tracking*` 继续负责参考动作跟踪。
 
-当前快捷脚本默认使用 **2048 环境**的 `amp_dance_2048`，与速度任务的并行数一致。原 `amp_dance` 的 256 配置保留，供原模型续训和小规模实验使用。容量和实际训练记录见 [2048 并行验证](并行规模验证与2048训练.md)。
+当前快捷脚本使用 **4096 环境**的 `amp_dance_4096`。重复的 2048 源 profile 已删除；已完成模型的运行清单嵌入了原始配置，仍可回放和导出。4096 的实际容量结果见 [4096 并行配置与容量结果](4096并行配置与容量结果.md)。
 
 AMP 学习专家动作的连续状态分布。actor 不接收参考目标、时间进度或动作帧号，因此这里学习的是舞蹈风格，不保证按原顺序和节拍复现完整编舞。需要严格复现指定片段时，使用 BeyondMimic 跟踪任务。
 
@@ -16,7 +16,7 @@ AMP 学习专家动作的连续状态分布。actor 不接收参考目标、时�
 | [amp/environment.py](../workspace/amp/environment.py) | 参考状态初始化和自动复位前的终止帧捕获 |
 | [amp/algorithm.py](../workspace/amp/algorithm.py) | PPO 扩展、判别器、梯度惩罚、风格奖励、历史回放和完整续训 |
 | [amp/conversion.py](../workspace/amp/conversion.py) | robot_lab AMP 数据到当前 G1 模型的转换 |
-| [amp_dance_2048.json](../profiles/amp_dance_2048.json) | 当前默认 2048 配置及判别器缩放说明 |
+| [amp_dance_4096.json](../profiles/amp_dance_4096.json) | 当前默认 4096 配置及实测参数说明 |
 | [amp_dance.json](../profiles/amp_dance.json) | 保留的 256 配置，兼容已有 AMP 模型 |
 | [prepare_amp_motion.py](../scripts/tools/prepare_amp_motion.py) | 独立数据准备程序 |
 | [17_prepare_amp_motion.sh](../scripts/17_prepare_amp_motion.sh) | CPU 数据转换入口 |
@@ -66,11 +66,11 @@ combined_reward = task_reward + 2.0 * 0.02 * clamp(softplus(logit), max=10)
 
 | 参数 | 默认值与说明 |
 | --- | --- |
-| 并行环境、训练预算 | 2048 环境、30000 次更新；这是候选预算，不保证收敛 |
+| 并行环境、训练预算 | 4096 环境、30000 次更新；这是候选预算，不保证收敛 |
 | 物理步、decimation、控制步 | 0.005 s、4、0.02 s，复用原 G1 模型及 PD |
 | actor/critic 观测 | 各 96 维：根线/角速度、重力投影、相对关节角、关节速度、上一动作 |
 | 策略网络 | 512/256/128、ELU、观测归一化，29 维动作；log 标准差初值 0.5 |
-| PPO 采样与更新 | 24 步、5 epochs、4 minibatches；2048 环境时每轮 49152 样本，每 minibatch 12288 |
+| PPO 采样与更新 | 24 步、5 epochs、4 minibatches；4096 环境时每轮 98304 样本，每 minibatch 24576 |
 | PPO 初始学习率、熵系数 | 0.0003、0.01；学习率按 KL 自适应调整 |
 | 判别器 | 166→256→128→1、ReLU，输出 logit |
 | 判别器优化 | 独立 Adam，学习率 0.0001、batch 4096、每 PPO 轮更新 8 次 |
@@ -80,7 +80,7 @@ combined_reward = task_reward + 2.0 * 0.02 * clamp(softplus(logit), max=10)
 
 首版支持单 GPU、单 NPZ 专家库。训练随机选择参考初态，回放从参考第 0 帧初始化；此后不再强制写入参考姿态。保留 startup 随机化，首版不加入随机推搡。PPO 的其他参数及判别器默认值分别见 profile 和 `amp/tasks.py`，最终生效配置保存在每次运行的 `params/agent.yaml`。
 
-原 256 配置仍为判别器 batch=1024、每轮更新 4 次、回放 50000 条。2048 配置的 rollout 增大 8 倍，判别器每轮采样总量从 4096 增为 32768，回放容量也增大 8 倍，保持采样比例和约 8 轮历史。两种配置的优化行为不能视为完全等价；仅改 `--envs` 不会自动缩放判别器。
+原 256 配置仍为判别器 batch=1024、每轮更新 4 次、回放 50000 条；2048 配置为 batch=4096、每轮 8 次、回放 400000。4096 profile 保持实际容量短测使用的 2048 判别器设置，只把环境数改为 4096，避免把未经测试的更大判别器批量混入本次切换。因此每轮 PPO rollout 翻倍，但判别采样占比和回放覆盖轮数减半；三种配置的优化行为不能视为完全等价。
 
 ## 5. 数据准备与训练
 
@@ -91,12 +91,12 @@ combined_reward = task_reward + 2.0 * 0.02 * clamp(softplus(logit), max=10)
 bash scripts/17_prepare_amp_motion.sh
 
 # 2. 4 环境、32 步零动作的软件检查，不更新网络
-bash g1.sh self-check --profile amp_dance_2048
+bash g1.sh self-check --profile amp_dance_4096
 
 # 3. 可选：独立 benchmark 目录中的短训检查
-bash g1.sh benchmark --profile amp_dance_2048 --envs 2048 --iterations 30
+bash g1.sh benchmark --profile amp_dance_4096 --envs 4096 --iterations 30
 
-# 4. 正式训练：默认 2048 环境、30000 更新
+# 4. 正式训练：默认 4096 环境、30000 更新
 bash scripts/18_train_amp_dance.sh --seed 42
 ```
 
@@ -104,7 +104,7 @@ bash scripts/18_train_amp_dance.sh --seed 42
 
 ```bash
 bash g1.sh --python scripts/reinforcement_learning/rsl_rl/train.py \
-  --profile amp_dance_2048 --envs 2048 --iterations 30000 --name amp_dance --seed 42
+  --profile amp_dance_4096 --envs 4096 --iterations 30000 --name amp_dance --seed 42
 ```
 
 先观察 100 次更新可加 `--iterations 100`，但不能据此验收舞蹈质量。也可以将已有标准 NPZ 作为风格专家，分别新建实验：
@@ -116,7 +116,7 @@ bash scripts/18_train_amp_dance.sh \
 
 `gangnam_style.npz` 转换后同样可通过 `--motion` 指定。采用相同动作数据做 AMP 风格学习和 BeyondMimic 跟踪，属于不同实验，模型不能直接混用。
 
-需要旧 256 档参数时，执行 `bash scripts/18_train_amp_dance.sh --profile amp_dance --envs 256`。
+旧 checkpoint 应直接交给回放或导出程序；程序读取同目录 `run_manifest.json` 中的嵌入 profile，不能用新 4096 profile 冒充旧训练配置。
 
 ## 6. 续训、回放、导出和仿真部署
 

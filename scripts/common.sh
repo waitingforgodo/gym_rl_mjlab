@@ -7,6 +7,7 @@ G1_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
   echo '请先在 Ubuntu 执行 setup.sh 或 apply_update.sh，再运行安装目录中的脚本。' >&2
   exit 1
 }
-# 2048 来自这台电脑 velocity_flat 的实测，不自动用于动作跟踪任务。
-G1_ENV_COUNT="${G1_ENV_COUNT:-2048}"
+# 4096 已在当前 RTX 5070 Laptop 上分别通过 AMP、完整状态跟踪和
+# 无状态估计跟踪的 30 更新容量短测；环境变量仍可显式降低规模。
+G1_ENV_COUNT="${G1_ENV_COUNT:-4096}"
 G1_CHECKPOINT="${G1_CHECKPOINT:-latest}"

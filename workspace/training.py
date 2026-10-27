@@ -26,9 +26,12 @@ def train(root, args, checkpoint=None):
         saved, profile, motion = checkpoint_context(root, checkpoint, args.profile, motion, args.legacy_velocity)
     # 2. 合并 profile、官方环境配置、PPO 配置和命令行覆盖。
     # 未显式指定时，续训继承原来的并行数与种子；tracking 不会再被平地
-    # 脚本的 2048 默认值覆盖。从零训练则取 profile 环境数和默认种子 42。
+    # 脚本的 4096 默认值覆盖。从零训练则取 profile 环境数和默认种子 42。
     num_envs, seed = inherited_run_options(args, saved)
-    spec, cfg, agent, manifest = build_configs(root, profile, num_envs, motion, seed=seed)
+    spec, cfg, agent, manifest = build_configs(
+        root, profile, num_envs, motion, seed=seed,
+        profile_spec=saved.get('profile_spec') if saved else None,
+        profile_sha256=saved.get('profile_sha256') if saved else None)
     if saved:
         # 允许调整并行环境数；观测任务、动作数据、版本、控制周期等必须一致。
         validate_resume(saved, manifest)

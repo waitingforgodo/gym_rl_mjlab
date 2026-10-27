@@ -1,0 +1,40 @@
+{
+  "task": "Mjlab-Tracking-Flat-Unitree-G1-No-State-Estimation",
+  "description": "无状态估计观测的独立动作模仿候选。（4096 并行版本）",
+  "recipe": "tracking_robust_v1",
+  "num_envs": 4096,
+  "iterations": 30000,
+  "agent_overrides": {
+    "actor.hidden_dims": [512, 256, 128],
+    "critic.hidden_dims": [512, 256, 128],
+    "actor.activation": "elu",
+    "critic.activation": "elu",
+    "actor.obs_normalization": true,
+    "critic.obs_normalization": true,
+    "actor.distribution_cfg.init_std": 1.0,
+    "actor.distribution_cfg.std_type": "log",
+    "num_steps_per_env": 24,
+    "algorithm.optimizer": "adam",
+    "algorithm.value_loss_coef": 1.0,
+    "algorithm.use_clipped_value_loss": true,
+    "algorithm.clip_param": 0.2,
+    "algorithm.num_learning_epochs": 5,
+    "algorithm.num_mini_batches": 4,
+    "algorithm.learning_rate": 0.001,
+    "algorithm.schedule": "adaptive",
+    "algorithm.gamma": 0.99,
+    "algorithm.lam": 0.95,
+    "algorithm.desired_kl": 0.01,
+    "algorithm.max_grad_norm": 1.0,
+    "algorithm.normalize_advantage_per_mini_batch": false,
+    "algorithm.entropy_coef": 0.005,
+    "save_interval": 500
+  },
+  "source": "本地 gym_rl + Unitree/mjlab 公开配置；详见 docs/训练配置优化依据与对照实验.md",
+  "_notes": {
+    "status": "4096 容量已通过短测；策略质量仍需同协议评估，不声明业界全局最优。",
+    "compatibility": "旧无状态 profile 保持不变；完整状态与无状态 checkpoint 不能互相续训。",
+    "rollout": "每环境 24 步；4096 环境时每轮 98304 样本，4 个 minibatch，每个 24576 样本。",
+    "budget": "4096 环境、30000 次更新为正式训练候选预算；每 500 次保存。"
+  }
+}

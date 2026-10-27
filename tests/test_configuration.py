@@ -1,12 +1,16 @@
 """配置回归：拒绝无效批量/拼写，并保护续训参数和新实验契约。"""
 from copy import deepcopy
 from dataclasses import dataclass, field
+import json
+from pathlib import Path
 from types import SimpleNamespace
 import unittest
 
 from workspace.configuration import (apply_agent_overrides, effective_agent_sha256,
                                      inherited_run_options, validate_ppo_config)
 from workspace.contract import validate_resume
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 @dataclass
@@ -46,6 +50,19 @@ class Agent:
 
 
 class ConfigurationTests(unittest.TestCase):
+    def test_current_training_profiles_all_default_to_4096(self):
+        """正式入口使用独立 profile；旧文件无需改写也不会被默认选中。"""
+        names = (
+            'velocity_flat_4096', 'velocity_gym_ppo_4096', 'velocity_robust_4096',
+            'tracking_4096', 'tracking_no_state_estimation_4096',
+            'tracking_robust_4096', 'tracking_no_state_estimation_robust_4096',
+            'amp_dance_4096',
+        )
+        for name in names:
+            with self.subTest(profile=name):
+                profile = json.loads((ROOT / 'profiles' / f'{name}.json').read_text(encoding='utf-8'))
+                self.assertEqual(profile['num_envs'], 4096)
+
     def test_nested_dictionary_override_and_tuple_conversion(self):
         agent = Agent()
         apply_agent_overrides(agent, {'actor.distribution_cfg.std_type': 'log',

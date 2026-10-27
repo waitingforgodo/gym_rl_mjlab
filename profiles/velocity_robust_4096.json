@@ -1,0 +1,40 @@
+{
+  "task": "Mjlab-Velocity-Flat-Unitree-G1",
+  "description": "平地行走研究候选：渐进速度课程、失败与下肢代价、正标准差参数化。（4096 并行版本）",
+  "recipe": "velocity_robust_v1",
+  "num_envs": 4096,
+  "iterations": 10000,
+  "agent_overrides": {
+    "actor.hidden_dims": [512, 256, 128],
+    "critic.hidden_dims": [512, 256, 128],
+    "actor.activation": "elu",
+    "critic.activation": "elu",
+    "actor.obs_normalization": true,
+    "critic.obs_normalization": true,
+    "actor.distribution_cfg.init_std": 1.0,
+    "actor.distribution_cfg.std_type": "log",
+    "num_steps_per_env": 24,
+    "algorithm.optimizer": "adam",
+    "algorithm.value_loss_coef": 1.0,
+    "algorithm.use_clipped_value_loss": true,
+    "algorithm.clip_param": 0.2,
+    "algorithm.num_learning_epochs": 5,
+    "algorithm.num_mini_batches": 4,
+    "algorithm.learning_rate": 0.001,
+    "algorithm.schedule": "adaptive",
+    "algorithm.gamma": 0.99,
+    "algorithm.lam": 0.95,
+    "algorithm.desired_kl": 0.01,
+    "algorithm.max_grad_norm": 1.0,
+    "algorithm.normalize_advantage_per_mini_batch": false,
+    "algorithm.entropy_coef": 0.008,
+    "save_interval": 100
+  },
+  "source": "本地 gym_rl + Unitree/mjlab 公开配置；详见 docs/训练配置优化依据与对照实验.md",
+  "_notes": {
+    "status": "4096 容量已通过短测；策略质量仍需同协议评估，不声明业界全局最优。",
+    "compatibility": "旧的 2048 velocity_robust profile 已删除；从零训练使用本配置。",
+    "rollout": "每环境 24 步；4096 环境时每轮 98304 样本，4 个 minibatch，每个 24576 样本。",
+    "budget": "10000 更新覆盖 0/1500/4000 课程阶段；并行数增大不代表可减少质量验收。"
+  }
+}

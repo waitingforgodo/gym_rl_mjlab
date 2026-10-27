@@ -39,7 +39,8 @@ def initialize(root):
     return torch
 
 
-def build_configs(root, profile_name, num_envs=None, motion=None, play=False, seed=42):
+def build_configs(root, profile_name, num_envs=None, motion=None, play=False, seed=42,
+                  profile_spec=None, profile_sha256=None):
     """从 profile 与官方 registry 组合配置，返回配置及可核验的训练清单。
 
     registry 的 load_* 返回副本，故修改 num_envs 等字段不会污染其他任务。
@@ -48,7 +49,17 @@ def build_configs(root, profile_name, num_envs=None, motion=None, play=False, se
     """
     from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
     profile_file = root / 'profiles' / f'{profile_name}.json'
-    profile = json.loads(profile_file.read_text(encoding='utf-8'))
+    if profile_spec is None:
+        profile = json.loads(profile_file.read_text(encoding='utf-8'))
+        profile_digest = sha256(profile_file)
+    else:
+        # 运行清单嵌入完整 profile 后，旧模型不再依赖仓库中永久保留一份
+        # 同名 JSON。哈希仍沿用训练当时的文件哈希，不能把旧 2048 模型
+        # 伪装成新的 4096 配置。
+        profile = dict(profile_spec)
+        if not profile_sha256:
+            raise ValueError('Embedded profile snapshot requires its original SHA-256')
+        profile_digest = profile_sha256
     cfg, agent = load_env_cfg(profile['task'], play=play), load_rl_cfg(profile['task'])
     cfg.scene.num_envs = num_envs or (1 if play else profile['num_envs'])
     cfg.seed = agent.seed = seed
@@ -59,7 +70,8 @@ def build_configs(root, profile_name, num_envs=None, motion=None, play=False, se
     validate_ppo_config(agent, cfg.scene.num_envs)
     recipe = profile.get('recipe')
     apply_recipe(cfg, agent, recipe, play=play)
-    manifest = dict(schema=1, profile=profile_name, profile_sha256=sha256(profile_file), task=profile['task'],
+    manifest = dict(schema=1, profile=profile_name, profile_sha256=profile_digest,
+                    profile_spec=profile, task=profile['task'],
                     agent_overrides=profile.get('agent_overrides', {}), motion_file=None, motion_sha256=None,
                     seed=seed, num_envs=cfg.scene.num_envs, control_dt=cfg.sim.mujoco.timestep*cfg.decimation,
                     mjlab_version=importlib.metadata.version('mjlab'), rsl_rl_version=importlib.metadata.version('rsl-rl-lib'),
@@ -68,11 +80,12 @@ def build_configs(root, profile_name, num_envs=None, motion=None, play=False, se
                     rollout_steps=agent.num_steps_per_env,
                     samples_per_update=cfg.scene.num_envs * agent.num_steps_per_env,
                     minibatch_size=cfg.scene.num_envs * agent.num_steps_per_env // agent.algorithm.num_mini_batches)
-    is_amp = profile.get('learning_method') == 'amp'
+    method = profile.get('learning_method')
+    is_amp = method == 'amp'
     if 'motion' in cfg.commands or is_amp:
         # MotionLoader 按数组下标取数，不会自动按名字重排，也不会按 fps 调速。
         # 所以在创建 GPU 环境之前检查本地 NPZ 的顺序、形状和采样频率。
-        if is_amp and not motion:
+        if method in ('amp', 'supermimic') and not motion:
             motion = root / profile['default_motion']
         if not motion:
             raise ValueError('Tracking needs --motion motions/processed/dance_102.npz')
@@ -99,6 +112,8 @@ def build_configs(root, profile_name, num_envs=None, motion=None, play=False, se
                             reference_usage='style_discriminator_and_reference_state_initialization')
         else:
             cfg.commands['motion'].motion_file = str(path)
+            if method == 'supermimic':
+                manifest['learning_method'] = 'supermimic'
         manifest.update(motion_file=str(path), motion_sha256=sha256(path))
     elif motion:
         raise ValueError('Velocity tracking does not consume a reference motion')

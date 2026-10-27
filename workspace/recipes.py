@@ -21,8 +21,29 @@ def apply_recipe(cfg, agent, name=None, play=False):
         # 默认即为官方 adaptive，仍显式声明，避免以后的配置漂移。
         # play 从动作开头播放；训练根据失败片段增加采样，并保留均匀探索。
         cfg.commands['motion'].sampling_mode = 'start' if play else 'adaptive'
+    elif name == 'supermimic_v1':
+        if 'motion' not in cfg.commands:
+            raise ValueError('supermimic_v1 requires a motion tracking task')
+        _supermimic(cfg, play)
     else:
         raise ValueError(f'Unknown training recipe: {name}')
+
+
+def _supermimic(cfg, play):
+    """对齐 SuperMimic 论文附录的 BeyondMimic 环境差异。
+
+    世界模型/策略优化不在 recipe 中偷偷实现；这里仅声明环境奖励、终止
+    和随机化。论文不使用外力推搡、自碰撞奖励和末端高度终止。
+    """
+    cfg.commands['motion'].sampling_mode = 'start' if play else 'adaptive'
+    cfg.events.pop('push_robot', None)
+    cfg.rewards.pop('self_collisions', None)
+    cfg.rewards['joint_limit'].weight = -2.0
+    cfg.terminations.pop('ee_body_pos', None)
+    from mjlab.managers.termination_manager import TerminationTermCfg
+    from .supermimic.reset_sampler import motion_done
+    cfg.terminations['motion_done'] = TerminationTermCfg(
+        func=motion_done, params={'command_name': 'motion'})
 
 
 def _velocity(cfg, agent, play):

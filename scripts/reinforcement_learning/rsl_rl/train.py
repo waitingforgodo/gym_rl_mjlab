@@ -1,7 +1,7 @@
 """程序 1：从零训练 G1 策略。
 
 运行：bash g1.sh --python scripts/reinforcement_learning/rsl_rl/train.py \
-    --profile velocity_flat --envs 256 --iterations 3000 --name walk
+    --profile velocity_flat_4096 --envs 4096 --iterations 3000 --name walk
 逐步实现见 workspace/training.py；PPO 本体位置用 show-sources 查看。
 """
 import sys

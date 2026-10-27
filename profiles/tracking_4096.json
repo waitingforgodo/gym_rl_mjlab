@@ -1,0 +1,12 @@
+{
+  "task": "Mjlab-Tracking-Flat-Unitree-G1",
+  "description": "BeyondMimic-style G1 tracking with state estimation and the validated 4096-environment batch.",
+  "num_envs": 4096,
+  "iterations": 10000,
+  "agent_overrides": {},
+  "source": "gym_rl/whole_body_tracking G1 task and mjlab v1.6.0 tracking baseline",
+  "_notes": {
+    "compatibility": "tracking 保持不变以兼容旧 checkpoint；新训练使用本独立 profile。",
+    "parallelism": "4096 环境 × 每环境 24 步 = 每轮 98304 条转移；4 个 PPO minibatch，每个 24576。"
+  }
+}

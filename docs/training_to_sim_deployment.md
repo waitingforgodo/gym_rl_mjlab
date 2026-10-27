@@ -111,7 +111,7 @@ cd /home/godot/g1-mjlab-workspace
 cat .runtime-path
 bash g1.sh doctor
 bash g1.sh test
-bash g1.sh self-check --profile velocity_flat
+bash g1.sh self-check --profile velocity_flat_4096
 ```
 
 `doctor` 报告版本与资源；`test` 执行 CPU 单元测试；`self-check` 创建 4 个环境执行 32 步零动作，不优化策略。零动作会转换成默认关节位置目标，不表示机器人必定站稳。
@@ -128,28 +128,28 @@ bash g1.sh --python scripts/reinforcement_learning/rsl_rl/train.py --help
 
 | profile | 目标 | 动作文件 |
 | --- | --- | --- |
-| `velocity_flat` | 官方平地速度跟踪基线 | 不需要 |
-| `velocity_gym_ppo` | 单独比较 entropy_coef=0.008，其余沿用 mjlab | 不需要 |
-| `tracking` | 带状态估计观测的动作模仿 | 需要转换后的 NPZ |
-| `tracking_no_state_estimation` | 删去指定状态估计观测的独立实验 | 需要 NPZ |
+| `velocity_flat_4096` | 官方平地速度跟踪基线 | 不需要 |
+| `velocity_gym_ppo_4096` | 单独比较 entropy_coef=0.008，其余沿用 mjlab | 不需要 |
+| `tracking_4096` | 带状态估计观测的动作模仿 | 需要转换后的 NPZ |
+| `tracking_no_state_estimation_4096` | 删去指定状态估计观测的独立实验 | 需要 NPZ |
 
-第一次跑可用 256 环境。已有 README 记录了你对 2048 环境的短测结果；可使用已验证的并行数。本次代码拆分无需重新测吞吐。新设备或新任务要测时再执行：
+当前机器默认使用 4096 环境；新设备、新动作或显存被其他程序占用时，应重新做任务专用短测：
 
 ```bash
-bash g1.sh benchmark --profile velocity_flat --envs 128 256 512 --iterations 30
+bash g1.sh benchmark --profile velocity_flat_4096 --envs 1024 2048 4096 --iterations 30
 ```
 
-它会实际进行短训。环境数越大，每次 PPO 更新的采样批量越大；当前配置每环境 24 步，256 环境每次更新得到 6144 条转移。改变环境数会改变优化行为，不只是改变运行速度。
+它会实际进行短训。环境数越大，每次 PPO 更新的采样批量越大；当前配置每环境 24 步，4096 环境每次更新得到 98304 条转移。改变环境数会改变优化行为，不只是改变运行速度。
 
 ## 5. 第三步：从零训练行走策略
 
 ```bash
 bash g1.sh --python scripts/reinforcement_learning/rsl_rl/train.py \
-  --profile velocity_flat \
-  --envs 256 \
+  --profile velocity_flat_4096 \
+  --envs 4096 \
   --iterations 3000 \
   --seed 42 \
-  --name walk_256
+  --name walk_4096
 ```
 
 终端打印 `RUN_DIR=...`，记录这个目录。`--iterations 3000` 是 3000 次“采样 + PPO 更新”，不是 3000 个物理步，也不是稳定行走保证。
@@ -333,11 +333,11 @@ bash g1.sh --python scripts/tools/prepare_motion.py dance_102
 # C. 检查数据以及跟踪环境
 MOTION="/home/godot/g1-mjlab-workspace/motions/processed/dance_102.npz"
 bash g1.sh inspect-motion "$MOTION"
-bash g1.sh self-check --profile tracking --motion "$MOTION"
+bash g1.sh self-check --profile tracking_4096 --motion "$MOTION"
 
-# D. 从零训练另一个任务，环境数先用跟踪任务适合的规模
+# D. 从零训练另一个任务；当前机器默认使用已通过容量短测的 4096
 bash g1.sh --python scripts/reinforcement_learning/rsl_rl/train.py \
-  --profile tracking --motion "$MOTION" --envs 256 --iterations 10000 --name dance_102
+  --profile tracking_4096 --motion "$MOTION" --envs 4096 --iterations 10000 --name dance_102
 ```
 
 CSV 每帧 36 列：根 xyz、根 xyzw 四元数、29 个 SDK 顺序关节角。转换时执行：

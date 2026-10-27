@@ -1,6 +1,8 @@
 # 常用脚本
 
-AMP 舞蹈入口：`17_prepare_amp_motion.sh` 转换本地专家数据，`18_train_amp_dance.sh` 使用独立 AMP 任务训练；默认 `amp_dance_2048`、2048 环境、30000 更新。可在末尾加 `--iterations 100` 做短训，或用 `--motion` 选择其他已转换的标准 NPZ。完整中文说明见 [AMP 舞蹈训练与仿真部署](../docs/AMP舞蹈训练与仿真部署.md)。
+当前从零训练快捷脚本已经统一切换到 **4096 环境**。AMP、BeyondMimic 完整状态和无状态估计的实测结果见 [4096 并行配置与容量结果](../docs/4096并行配置与容量结果.md)。重复的 2048 profile 已删除；旧运行通过嵌入配置快照兼容。
+
+AMP 舞蹈入口：`17_prepare_amp_motion.sh` 转换本地专家数据，`18_train_amp_dance.sh` 使用独立 AMP 任务训练；默认 `amp_dance_4096`、4096 环境、30000 更新。可在末尾加 `--iterations 100` 做短训，或用 `--motion` 选择其他已转换的标准 NPZ。完整中文说明见 [AMP 舞蹈训练与仿真部署](../docs/AMP舞蹈训练与仿真部署.md)。
 
 需要逐个查看 Python 程序时，训练/续训/回放/评估/导出入口在 `reinforcement_learning/rsl_rl/`，仿真部署入口在 `deploy/deploy_sim.py`。用 `bash g1.sh --python 程序路径 参数...` 启动；核心实现和完整流程见 [训练到仿真部署教程](../docs/training_to_sim_deployment.md)。原有编号 shell 脚本继续可用。
 
@@ -22,13 +24,13 @@ bash ~/g1-mjlab-workspace/scripts/06_evaluate_forward.sh
 bash ~/g1-mjlab-workspace/scripts/07_tensorboard.sh
 ```
 
-AMP 与 BeyondMimic 的容量扫描和三种任务实训记录见 [2048 并行验证](../docs/并行规模验证与2048训练.md)。
+SuperMimic 使用四个独立程序：`19_train_supermimic.sh` 训练、`20_play_supermimic.sh` 回放、`21_export_supermimic.sh` 导出、`22_deploy_supermimic_sim.sh` 仅加载导出 JIT。完整说明见 [SuperMimic 论文复现与仿真部署](../docs/SuperMimic论文复现与仿真部署.md)。
 
 ## 全部入口
 
 - `00_check.sh`：依赖/资源清单、CPU 测试、4 环境 32 步检查。
-- `01_benchmark.sh`：512/1024/2048 环境，各短训 100 次，比较吞吐和余量。
-- `02_train.sh`：从零启动官方平地基线，2048 环境、3000 次更新。
+- `01_benchmark.sh`：1024/2048/4096 环境，各短训 100 次，比较吞吐和余量。
+- `02_train.sh`：从零启动官方平地基线，`velocity_flat_4096`、4096 环境、3000 次更新。
 - `03_resume.sh`：续训本空间最新正式模型，默认继承原环境数与种子，新增 1000 次更新。
 - `04_play.sh`：回放策略，默认 Viser 网页。
 - `05_evaluate.sh`：官方 play 随机命令，16 环境 × 60 秒。
@@ -37,15 +39,15 @@ AMP 与 BeyondMimic 的容量扫描和三种任务实训记录见 [2048 并行�
 - `08_export.sh`：导出 JIT/ONNX/部署清单并进行内置检查。
 - `09_deploy_sim.sh`：指定导出包，运行同后端仿真回归。
 - `10_import_motions.sh`：复制并转换 dance_102 和 gangnam_style，已有 NPZ 只检查。
-- `11_train_tracking.sh`：另起 dance_102 动作跟踪，默认 2048 环境，原 tracking profile 保留。
+- `11_train_tracking.sh`：另起 dance_102 动作跟踪，默认 `tracking_4096`、4096 环境。
 - `12_summary.sh`：读取最新运行的曲线末值、吞吐及资源记录。
 - `13_resume_legacy.sh`：从旧环境的 g1_continue 迁入。迁入后用 03。
 - `14_show_config.sh`：打印实际保存的完整训练配置和运行清单。
-- `15_train_robust.sh`：新的行走研究候选，默认 2048 环境、10000 更新。
-- `16_train_tracking_robust.sh`：新的跟踪研究候选，默认 `tracking_robust_2048`、2048 环境、30000 更新；无状态估计版本传 `--profile tracking_no_state_estimation_robust_2048`。
+- `15_train_robust.sh`：新的行走研究候选，默认 `velocity_robust_4096`、4096 环境、10000 更新。
+- `16_train_tracking_robust.sh`：新的跟踪研究候选，默认 `tracking_robust_4096`、4096 环境、30000 更新；无状态估计版本传 `--profile tracking_no_state_estimation_robust_4096`。
 
 - `17_prepare_amp_motion.sh`：将本地 AMP 舞蹈转换为当前 G1 标准 NPZ，相同来源的已有数据校验后复用。
-- `18_train_amp_dance.sh`：默认 `amp_dance_2048`、2048 环境、30000 更新，包含放大的判别器批量和回放池。
+- `18_train_amp_dance.sh`：默认 `amp_dance_4096`、4096 环境、30000 更新，判别器参数保持实际 4096 容量短测时的设置。
 
 新配方的来源、中文参数说明和公平对照步骤见 [训练配置优化依据与对照实验](../docs/训练配置优化依据与对照实验.md)。使用 `bash g1.sh --python scripts/tools/compare_policies.py --help` 查看多策略比较工具。
 
@@ -60,7 +62,7 @@ bash ~/g1-mjlab-workspace/scripts/03_resume.sh --iterations 2000 --name walk_mor
 bash ~/g1-mjlab-workspace/scripts/04_play.sh --port 8081
 bash ~/g1-mjlab-workspace/scripts/07_tensorboard.sh --port 6007
 bash ~/g1-mjlab-workspace/scripts/06_evaluate_forward.sh --velocity-cmd 1.0 0 0 --seconds 120
-bash ~/g1-mjlab-workspace/scripts/01_benchmark.sh --envs 1024 2048 --iterations 200
+bash ~/g1-mjlab-workspace/scripts/01_benchmark.sh --envs 2048 4096 --iterations 200
 ```
 
 指定你刚评估过的模型，避免 `latest` 随后来新实验改变：
@@ -97,8 +99,8 @@ bash ~/g1-mjlab-workspace/scripts/09_deploy_sim.sh --bundle /完整的导出目�
 
 ```bash
 bash ~/g1-mjlab-workspace/scripts/10_import_motions.sh
-bash ~/g1-mjlab-workspace/scripts/00_check.sh --profile tracking --motion ~/g1-mjlab-workspace/motions/processed/dance_102.npz
-bash ~/g1-mjlab-workspace/scripts/01_benchmark.sh --profile tracking --motion ~/g1-mjlab-workspace/motions/processed/dance_102.npz --envs 128 256 512
+bash ~/g1-mjlab-workspace/scripts/00_check.sh --profile tracking_4096 --motion ~/g1-mjlab-workspace/motions/processed/dance_102.npz
+bash ~/g1-mjlab-workspace/scripts/01_benchmark.sh --profile tracking_4096 --motion ~/g1-mjlab-workspace/motions/processed/dance_102.npz --envs 2048 4096
 bash ~/g1-mjlab-workspace/scripts/11_train_tracking.sh
 ```
 
