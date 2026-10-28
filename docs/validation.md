@@ -1,12 +1,18 @@
 # 验证范围
 
+## 2026-10-28 TensorBoard 端口复用与冲突处理
+
+此前后台服务已占用 6006，用户再次启动会触发重复绑定错误。脚本现先检查本机服务：日志目录相同则复用并返回链接；端口由其他目录/服务占用时自动选择后续可用端口，将最终端口放在实际启动参数末尾，避免旧参数覆盖。显式额外服务选项会启动新服务，避免被复用逻辑忽略。端口 0 仍交给系统分配，权限错误不会伪装成端口占用；不终止已有服务或训练进程。
+
+10 项相关回归通过，含同目录复用、不同目录换端口、额外参数、非 TensorBoard JSON 响应、端口范围和权限错误。真实重复启动返回 0 并复用现有 6006 服务；使用独立临时目录再次请求 6006，实际自动启动到 6007，HTTP 确认目录正确后仅关闭临时服务。原 6006 仍返回唯一 run，原训练进程保持运行。检查记录在本地 `.cache/tensorboard-port-validation.json`，Bash 语法、帮助和 diff 检查通过。
+
 ## 2026-10-28 TensorBoard 默认只显示当前训练
 
 `07_tensorboard.sh` 不再默认扫描整个 outputs。轻量选择器按正式 run 的启动清单选择最近一次训练，SuperMimic 只加载该 run 的 `tb/`，排除 checks、benchmarks 和其他历史 run；历史日志保留。显式 `--logdir`/`--logdir_spec` 仍可覆盖，帮助入口不依赖已有训练目录。
 
 4 项目录选择回归通过，覆盖新 run 尚未写出 event、旧 event 后续写入、归档/benchmark 排除、历史无清单布局及空工作空间。另验证脚本从其他目录调用、带空格路径、端口覆盖、logdir_spec 和帮助参数，Bash 语法与 diff 检查通过。
 
-本次已启动单目录网页服务，HTTP `/data/environment` 确认 logdir 为 `outputs/supermimic/runs/lafan1_4096_h16_eager/tb`，`/data/runs` 返回唯一 run `.`。网页地址 `http://localhost:6006/`，仅绑定 127.0.0.1；训练进程未停止或重启。选择发生在脚本启动时，下一轮训练开始后需重新启动网页服务。
+本次已启动单目录网页服务，HTTP `/data/environment` 确认 logdir 为 `outputs/supermimic/runs/lafan1_4096_h16_eager/tb`，`/data/runs` 返回唯一 run `.`。网页地址 `http://localhost:6006/`，仅绑定 127.0.0.1；训练进程未停止或重启。选择发生在脚本启动时，下一轮训练开始后重新运行脚本即可，后续增加的服务复用和端口处理见上一节。
 
 ## 2026-10-28 SuperMimic 单一配置与自动最佳保留
 

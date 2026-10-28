@@ -155,7 +155,7 @@ bash g1.sh supermimic deploy --checkpoint latest --headless --steps 500
 
 新产物按方法保存：`outputs/<方法>/runs/`、`evaluations/`、`deploy/`；SuperMimic 当前没有导出包目录。原 `outputs/runs/`、`outputs/deploy/` 内模型保持原位置，方法入口兼容读取它们。`latest` 根据清单匹配本方法，不会因为 AMP 模型更新更晚就被 BeyondMimic 选中；正式对照仍应填写明确 checkpoint。
 
-编号脚本继续可用：17/18 是 AMP，11/16 是 BeyondMimic，19/20 是 SuperMimic，02/15 是速度 PPO，21–25 是 Instinct；原独立 Python 入口保留转发。公共 doctor、test、benchmark、TensorBoard 仍在 `g1.sh` / `scripts/`。TensorBoard 默认只显示最近一次正式训练，启动时打印选中的日志目录，历史日志保留。已有网页服务或开始下一轮训练后需重新启动脚本。需要查看某方法的历史对比时，可以显式指定根目录：
+编号脚本继续可用：17/18 是 AMP，11/16 是 BeyondMimic，19/20 是 SuperMimic，02/15 是速度 PPO，21–25 是 Instinct；原独立 Python 入口保留转发。公共 doctor、test、benchmark、TensorBoard 仍在 `g1.sh` / `scripts/`。TensorBoard 默认只显示最近一次正式训练，打印选中的日志目录，历史日志保留。同目录服务会直接复用；端口被其他服务占用时自动换可用端口并打印实际地址。下一轮训练开始后重新运行脚本即可。需要查看某方法的历史对比时，可以显式指定根目录：
 
 ```bash
 bash scripts/07_tensorboard.sh --logdir "$PWD/outputs/amp/runs"

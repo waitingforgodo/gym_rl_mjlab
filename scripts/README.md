@@ -56,7 +56,7 @@ bash g1.sh --python scripts/supermimic/evaluate.py --checkpoint latest
 - `04_play.sh`：回放策略，默认 Viser 网页。
 - `05_evaluate.sh`：官方 play 随机命令，16 环境 × 60 秒。
 - `06_evaluate_forward.sh`：固定机体系 `(0.5, 0, 0)`，16 环境 × 60 秒。
-- `07_tensorboard.sh`：默认只载入最近一次正式训练的日志目录，排除历史 run、checks 和 benchmarks；启动时打印选中目录和网页链接，不使用 GPU。已有服务需重启以应用新的目录；开始新一轮训练后也重新启动该脚本。`--logdir` 可手动指定其他目录，`--port` 会同步更新打印的链接。在 VS Code 终端按住 Ctrl 点击访问。PPO 曲线说明见 [训练流程与配置详解第 12 节](../docs/训练流程与配置详解.md#12-怎么用-tensorboard-看进度)。
+- `07_tensorboard.sh`：默认只载入最近一次正式训练的日志目录，排除历史 run、checks 和 benchmarks，不使用 GPU。同目录已有服务时直接返回网页链接；其他服务占用端口时自动选择后续可用端口，打印实际地址。开始新一轮训练后重新运行脚本即可选择新目录。`--logdir` 可手动指定其他目录，额外服务选项会传递给新服务。在 VS Code 终端按住 Ctrl 点击链接访问。PPO 曲线说明见 [训练流程与配置详解第 12 节](../docs/训练流程与配置详解.md#12-怎么用-tensorboard-看进度)。
 - `08_export.sh`：导出 JIT/ONNX/部署清单并进行内置检查。
 - `09_deploy_sim.sh`：指定导出包，运行同后端仿真回归。
 - `10_import_motions.sh`：复制并转换 dance_102 和 gangnam_style，已有 NPZ 只检查。

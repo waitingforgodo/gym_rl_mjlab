@@ -12,26 +12,49 @@ G1_TB_PORT=6006
 G1_TB_NEXT_PORT=0
 G1_TB_HELP=0
 G1_TB_CUSTOM_LOGDIR=0
+G1_TB_REQUESTED_LOGDIR=''
+G1_TB_NEXT_LOGDIR=0
+G1_TB_REUSE=1
 for G1_TB_ARG in "$@"; do
   if [ "$G1_TB_NEXT_PORT" = 1 ]; then
     G1_TB_PORT="$G1_TB_ARG"
     G1_TB_NEXT_PORT=0
     continue
   fi
+  if [ "$G1_TB_NEXT_LOGDIR" = 1 ]; then
+    G1_TB_REQUESTED_LOGDIR="$G1_TB_ARG"
+    G1_TB_NEXT_LOGDIR=0
+    continue
+  fi
   case "$G1_TB_ARG" in
     --port) G1_TB_NEXT_PORT=1 ;;
     --port=*) G1_TB_PORT="${G1_TB_ARG#--port=}" ;;
-    --logdir|--logdir=*|--logdir_spec|--logdir_spec=*) G1_TB_CUSTOM_LOGDIR=1 ;;
+    --logdir|--logdir_spec) G1_TB_CUSTOM_LOGDIR=1; G1_TB_NEXT_LOGDIR=1 ;;
+    --logdir=*) G1_TB_CUSTOM_LOGDIR=1; G1_TB_REQUESTED_LOGDIR="${G1_TB_ARG#--logdir=}" ;;
+    --logdir_spec=*) G1_TB_CUSTOM_LOGDIR=1; G1_TB_REQUESTED_LOGDIR="${G1_TB_ARG#--logdir_spec=}" ;;
     -h|--help|--helpfull|--helpshort) G1_TB_HELP=1 ;;
+    *) G1_TB_REUSE=0 ;;
   esac
 done
 G1_TB_LOGDIR_ARGS=()
 if [ "$G1_TB_HELP" = 0 ] && [ "$G1_TB_CUSTOM_LOGDIR" = 0 ]; then
   G1_TB_LOGDIR=$("$G1_RUNTIME/.venv/bin/python" "$G1_ROOT/workspace/common/tensorboard.py" "$G1_ROOT")
   G1_TB_LOGDIR_ARGS=(--logdir "$G1_TB_LOGDIR")
+  G1_TB_REQUESTED_LOGDIR="$G1_TB_LOGDIR"
   printf '\n仅显示当前这次训练：\n%s\n' "$G1_TB_LOGDIR"
 fi
 if [ "$G1_TB_HELP" = 0 ]; then
+  G1_TB_ENDPOINT=$("$G1_RUNTIME/.venv/bin/python" "$G1_ROOT/workspace/common/tensorboard.py" \
+    --endpoint "$G1_TB_REQUESTED_LOGDIR" "$G1_TB_PORT" "$G1_TB_REUSE")
+  read -r G1_TB_ACTION G1_TB_SELECTED_PORT <<< "$G1_TB_ENDPOINT"
+  if [ "$G1_TB_ACTION" = reuse ]; then
+    printf '\n当前训练的 TensorBoard 已在运行，直接打开：\nhttp://localhost:%s/\n\n' "$G1_TB_SELECTED_PORT"
+    exit 0
+  fi
+  if [ "$G1_TB_SELECTED_PORT" != "$G1_TB_PORT" ]; then
+    printf '\n端口 %s 已被占用，自动使用 %s。\n' "$G1_TB_PORT" "$G1_TB_SELECTED_PORT"
+  fi
+  G1_TB_PORT="$G1_TB_SELECTED_PORT"
   if [ "$G1_TB_PORT" = 0 ]; then
     # 端口 0 由系统自动选择，实际链接由 TensorBoard 启动后输出。
     printf '\nTensorBoard 正在启动，自动端口的网页地址请看后续输出。\n\n'
@@ -46,4 +69,4 @@ export OMP_NUM_THREADS="${G1_CPU_THREADS:-2}"
 export PYTHONNOUSERSITE=1
 export PYTHONDONTWRITEBYTECODE=1
 exec nice -n 10 "$G1_RUNTIME/.venv/bin/python" -m tensorboard.main \
-  "${G1_TB_LOGDIR_ARGS[@]}" --host 127.0.0.1 --port 6006 "$@"
+  "${G1_TB_LOGDIR_ARGS[@]}" --host 127.0.0.1 "$@" --port "$G1_TB_PORT"
