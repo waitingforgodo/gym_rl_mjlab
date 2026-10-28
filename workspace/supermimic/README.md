@@ -17,6 +17,8 @@ bash g1.sh supermimic preflight --allow-config-changes \
   --config workspace/supermimic/profiles/lafan1_4096_h16_eager.json
 # 需要开始新的完整训练时执行；不续用损坏的 dance 模型。
 bash scripts/19_train_supermimic.sh --name lafan1_4096_h16_eager
+# 另开终端，只显示当前这一轮训练；旧网页服务需先 Ctrl+C 后重启。
+bash scripts/07_tensorboard.sh
 ```
 
 通用 `g1.sh supermimic train` 继续逐字段对齐固定上游 `TrainConfig`，使用 4096 环境、H=32 及其余原始参数。19 号脚本传 `--strict-upstream` 时也回到该入口；显式 `--config` / `--resume` 按调用者参数执行。

@@ -167,7 +167,7 @@ bash scripts/20_play_supermimic.sh --checkpoint latest --port 8080
 bash g1.sh --python scripts/supermimic/evaluate.py --checkpoint latest
 
 # 看曲线。
-bash scripts/07_tensorboard.sh --logdir "$PWD/outputs/supermimic/runs"
+bash scripts/07_tensorboard.sh
 ```
 
 `latest` 只查新实现的目录；正式比较应填写明确 checkpoint。`play --headless --steps 500` 是允许自动 reset 的链路检查，质量结论应使用 `evaluate.py` 的首回合报告。训练目录保存实际 `config.json`、源码提交/动作哈希/依赖版本的 `run_manifest.json`、`tb/` 及权重。相同模型不能无提示更换参考动作或顺序后续训。

@@ -40,7 +40,7 @@ bash g1.sh supermimic preflight --allow-config-changes \
   --config workspace/supermimic/profiles/lafan1_4096_h16_eager.json
 # 只有容量通过后才执行训练。
 bash scripts/19_train_supermimic.sh --name lafan1_4096_h16_eager
-bash scripts/07_tensorboard.sh --logdir "$PWD/outputs/supermimic/runs"
+bash scripts/07_tensorboard.sh
 bash scripts/20_play_supermimic.sh --checkpoint latest --port 8080
 bash g1.sh --python scripts/supermimic/evaluate.py --checkpoint latest
 ```
@@ -56,7 +56,7 @@ bash g1.sh --python scripts/supermimic/evaluate.py --checkpoint latest
 - `04_play.sh`：回放策略，默认 Viser 网页。
 - `05_evaluate.sh`：官方 play 随机命令，16 环境 × 60 秒。
 - `06_evaluate_forward.sh`：固定机体系 `(0.5, 0, 0)`，16 环境 × 60 秒。
-- `07_tensorboard.sh`：打开训练曲线服务，不使用 GPU；启动时输出可点击的网页链接，使用 `--port` 时链接同步更新。在 VS Code 终端按住 Ctrl 点击访问。41 条曲线的含义及阅读顺序见 [训练流程与配置详解第 12 节](../docs/训练流程与配置详解.md#12-怎么用-tensorboard-看进度)。
+- `07_tensorboard.sh`：默认只载入最近一次正式训练的日志目录，排除历史 run、checks 和 benchmarks；启动时打印选中目录和网页链接，不使用 GPU。已有服务需重启以应用新的目录；开始新一轮训练后也重新启动该脚本。`--logdir` 可手动指定其他目录，`--port` 会同步更新打印的链接。在 VS Code 终端按住 Ctrl 点击访问。PPO 曲线说明见 [训练流程与配置详解第 12 节](../docs/训练流程与配置详解.md#12-怎么用-tensorboard-看进度)。
 - `08_export.sh`：导出 JIT/ONNX/部署清单并进行内置检查。
 - `09_deploy_sim.sh`：指定导出包，运行同后端仿真回归。
 - `10_import_motions.sh`：复制并转换 dance_102 和 gangnam_style，已有 NPZ 只检查。

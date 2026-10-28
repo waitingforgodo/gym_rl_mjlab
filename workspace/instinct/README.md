@@ -113,7 +113,7 @@ bash g1.sh instinct train --profile beyondmimic --config /路径/配置.json --d
 ## 3. 曲线、网页回放和评测
 
 ```bash
-bash scripts/07_tensorboard.sh --logdir "$PWD/outputs/instinct/runs"
+bash scripts/07_tensorboard.sh
 bash g1.sh instinct summary --profile beyondmimic --checkpoint latest
 
 # 输出可点击网页地址 http://localhost:8080。

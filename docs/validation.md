@@ -1,5 +1,13 @@
 # 验证范围
 
+## 2026-10-28 TensorBoard 默认只显示当前训练
+
+`07_tensorboard.sh` 不再默认扫描整个 outputs。轻量选择器按正式 run 的启动清单选择最近一次训练，SuperMimic 只加载该 run 的 `tb/`，排除 checks、benchmarks 和其他历史 run；历史日志保留。显式 `--logdir`/`--logdir_spec` 仍可覆盖，帮助入口不依赖已有训练目录。
+
+4 项目录选择回归通过，覆盖新 run 尚未写出 event、旧 event 后续写入、归档/benchmark 排除、历史无清单布局及空工作空间。另验证脚本从其他目录调用、带空格路径、端口覆盖、logdir_spec 和帮助参数，Bash 语法与 diff 检查通过。
+
+本次已启动单目录网页服务，HTTP `/data/environment` 确认 logdir 为 `outputs/supermimic/runs/lafan1_4096_h16_eager/tb`，`/data/runs` 返回唯一 run `.`。网页地址 `http://localhost:6006/`，仅绑定 127.0.0.1；训练进程未停止或重启。选择发生在脚本启动时，下一轮训练开始后需重新启动网页服务。
+
 ## 2026-10-28 SuperMimic 单一配置与自动最佳保留
 
 按用户长期要求，`workspace/supermimic/profiles/` 仅保留最高已验证的 `lafan1_4096_h16_eager.json`，删除旧 512/1024、历史低显存及重复路径配置。所有本地 train/resume 默认接入自动选优：每个保存点及结束时独立评测全部动作，依次比较整段成功率、平均完成比例、平均归一化回报，每个 run 只保留一个可续训的 `best.pt`，自动删除中间权重。
