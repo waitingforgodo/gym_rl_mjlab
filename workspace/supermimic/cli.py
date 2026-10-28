@@ -11,7 +11,7 @@ def parser():
     sub = p.add_subparsers(dest='command', required=True)
     prepare = sub.add_parser('prepare', help='Download upstream LAFAN1 G1 40 CSV clips and convert to standard 50 Hz NPZ')
     prepare.add_argument('--workers', type=positive, default=2, help='Concurrent downloads only; conversion is memory-bounded')
-    for command in ('train', 'resume'):
+    for command in ('train', 'resume', 'preflight'):
         child = sub.add_parser(command, parents=[train_parser()], add_help=False)
         if command == 'resume':
             child.add_argument('--checkpoint', type=Path, help='Alias for --resume; target TOTAL env steps required')
@@ -35,6 +35,9 @@ def main(argv=None):
             import json
             from workspace.common.datasets import prepare_lafan1
             print(json.dumps(prepare_lafan1(args.workers), ensure_ascii=False, indent=2))
+        elif args.command == 'preflight':
+            from .training import preflight
+            preflight(args)
         elif args.command in ('train', 'resume'):
             if args.command == 'resume':
                 args.resume = args.checkpoint or args.resume
@@ -48,7 +51,7 @@ def main(argv=None):
         else:
             from .inference import play, evaluate
             (evaluate if args.command == 'evaluate' else play)(args)
-    except (ValueError, FileNotFoundError) as exc:
+    except (ValueError, FileNotFoundError, FileExistsError, FloatingPointError) as exc:
         p.error(str(exc))
 
 

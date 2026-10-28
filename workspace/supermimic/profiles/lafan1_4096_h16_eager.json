@@ -1,0 +1,6 @@
+{
+  "data": {"npz_dir": "motions/processed/lafan1"},
+  "env": {"num_envs": 4096},
+  "wm_trainer": {"batch_size": 512, "compile": null},
+  "policy_trainer": {"batch_size": 512, "horizon": 16, "compile": null}
+}

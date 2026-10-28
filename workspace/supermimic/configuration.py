@@ -19,8 +19,13 @@ def train_parser():
     p = argparse.ArgumentParser(description='Train vendored SuperMimic-Reproduced in the existing runtime')
     p.add_argument('--config', type=Path, help='Partial upstream TrainConfig JSON; unknown fields are rejected')
     data = p.add_mutually_exclusive_group()
-    data.add_argument('--motion', type=Path, help='One 50 Hz NPZ; default motions/processed/amp_dance.npz')
-    data.add_argument('--npz-dir', type=Path, help='Directory of standard 50 Hz NPZ clips')
+    data.add_argument('--motion', type=Path, help='One 50 Hz NPZ; requires --allow-config-changes')
+    data.add_argument('--npz-dir', type=Path, help='50 Hz NPZ directory; default pinned 40-clip LAFAN1 dataset')
+    mode = p.add_mutually_exclusive_group()
+    mode.add_argument('--strict-upstream', dest='strict_upstream', action='store_true', default=True,
+                      help='Require pinned upstream hyperparameters and full LAFAN1 data (default)')
+    mode.add_argument('--allow-config-changes', dest='strict_upstream', action='store_false',
+                      help='Explicit custom experiment; save all deviations from upstream defaults')
     p.add_argument('--clips', nargs='+', help='Clip stems within --npz-dir')
     p.add_argument('--envs', type=positive, help='Parallel simulation environments; upstream default 4096')
     p.add_argument('--iterations', type=positive, help='TOTAL vectorized env steps, not optimizer updates; default 320000')
@@ -103,8 +108,17 @@ def provenance(files):
         raise ValueError(f'Vendored upstream source differs from pinned commit: {changed}')
     versions = {p: importlib.metadata.version(p) for p in
                 ('torch', 'mjlab', 'mujoco', 'mujoco-warp', 'warp-lang')}
+    import tomllib
+    packages = tomllib.loads((UPSTREAM / 'uv.lock').read_text())['package']
+    locked = {name: sorted({p['version'] for p in packages if p['name'] == name}) for name in versions}
+    differences = {name: dict(installed=version, upstream_locked=locked[name])
+                   for name, version in versions.items() if version not in locked[name]}
+    from .runtime import configure_backend_compatibility
     return dict(implementation='SuperMimic-Reproduced', upstream_repository=info['repository'],
                 upstream_commit=info['commit'], runtime_versions=versions,
+                backend_compatibility=configure_backend_compatibility(),
                 upstream_lock_environment=False,
+                runtime_lock_differences=differences,
+                upstream_mjlab_source_commit='8bb2bc9e187797689ec82c78c35019afd2fd0376',
                 adapter_sha256=hashlib.sha256(''.join(digest(p) for p in sorted(Path(__file__).parent.glob('*.py'))).encode()).hexdigest(),
                 data=[dict(path=str(p), sha256=digest(p)) for p in files])

@@ -6,13 +6,15 @@ from .paths import ROOT, RUNS
 from .runtime import initialize
 from .configuration import merge_config, data_files, provenance
 from .checkpoints import resolve_checkpoint, load_checkpoint, check_data_contract
+from workspace.common.contract import write_json
 
 
-def train(args):
-    from dataclasses import asdict
+def configure(args):
     initialize()
     from supermimic.config import TrainConfig
     cfg = TrainConfig()
+    from .strict import LOCAL_LAFAN, training_contract
+    cfg.data.npz_dir = LOCAL_LAFAN
     resumed = None
     if args.resume:
         args.resume = resolve_checkpoint(args.resume)
@@ -20,8 +22,8 @@ def train(args):
         merge_config(cfg, resumed['config'])
     if args.config:
         merge_config(cfg, json.loads(args.config.read_text()))
-    if args.motion or (not args.resume and not args.config and not args.npz_dir):
-        path = (args.motion or ROOT / 'motions/processed/amp_dance.npz').expanduser().resolve()
+    if args.motion:
+        path = args.motion.expanduser().resolve()
         cfg.data.npz_dir, cfg.data.clips = path.parent, [path.stem]
         cfg.data.library, cfg.data.manifest, cfg.data.limit = None, None, None
     if args.npz_dir:
@@ -67,27 +69,105 @@ def train(args):
         check_data_contract(args.resume, files)
         if cfg.schedule.total_iterations <= resumed['iteration']:
             raise ValueError('--iterations must exceed the resumed env-step count')
+    contract = training_contract(cfg, TrainConfig(), files,
+                                 strict=getattr(args, 'strict_upstream', True))
     manifest = provenance(files)
     manifest['iteration_unit'] = 'vectorized_environment_control_step'
+    manifest['training_contract'] = contract
+    manifest['numerical_guard'] = 'finite actions, gradients, update metrics and atomic finite-only checkpoints; upstream losses/updates unchanged'
+    from .retention import POLICY
+    manifest['checkpoint_retention'] = dict(POLICY, interval=cfg.schedule.checkpoint_interval)
+    if args.resume:
+        manifest['source_checkpoint'] = str(args.resume)
+    return cfg, manifest
+
+
+def capacity_report(cfg, manifest):
+    from dataclasses import asdict
+    from .capacity import probe
+    result = probe(cfg)
+    output = ROOT / 'outputs/supermimic/checks' / f'{datetime.now():%Y%m%d_%H%M%S_%f}_capacity.json'
+    report = dict(config=asdict(cfg), manifest=manifest, capacity=result)
+    write_json(output, report)
+    print(f'CAPACITY_REPORT={output}\n{json.dumps(result, indent=2)}', flush=True)
+    return result, output
+
+
+def preflight(args):
+    from dataclasses import asdict
+    cfg, manifest = configure(args)
+    if args.dry_run:
+        print(json.dumps(dict(config=asdict(cfg), manifest=manifest), ensure_ascii=False, indent=2, default=str))
+        return
+    from workspace.common.cli import training_lock
+    with training_lock():
+        result, output = capacity_report(cfg, manifest)
+    if not result['passed']:
+        raise ValueError(f'Configured native training exceeds available GPU capacity; parameters were not reduced. See {output}')
+
+
+def train(args):
+    from dataclasses import asdict
+    cfg, manifest = configure(args)
     log_dir = Path(cfg.log_root) / cfg.run_name
     if args.dry_run:
         print(json.dumps(dict(config=asdict(cfg), manifest=manifest), ensure_ascii=False, indent=2, default=str))
         return
-    # 不覆盖已有实验，即使上游默认 debug 名称可复用也另开目录。
-    log_dir.mkdir(parents=True, exist_ok=False)
-    (log_dir / 'run_manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2))
-    print(f'RUN={log_dir}\nTENSORBOARD_LOGDIR={log_dir / "tb"}', flush=True)
+    if log_dir.exists():
+        raise FileExistsError(f'Existing run is preserved: {log_dir}; choose a new --name')
     from workspace.common.cli import training_lock
-    from supermimic.training.loop import Trainer
-    # 单 GPU 本地入口；算法实现与全部优化步骤由上游 Trainer 执行。
     with training_lock():
-        tr = Trainer(cfg)
+        result, output = capacity_report(cfg, manifest)
+        if not result['passed']:
+            raise ValueError(f'Configured native training exceeds GPU capacity; no run was started and no parameters were reduced. See {output}')
+        manifest['capacity_report'] = str(output)
+        log_dir.mkdir(parents=True, exist_ok=False)
+        write_json(log_dir / 'run_manifest.json', manifest)
+        print(f'RUN={log_dir}\nTENSORBOARD_LOGDIR={log_dir / "tb"}', flush=True)
+        from supermimic.training.loop import Trainer
+        from workspace.common.telemetry import ResourceSampler
+        from .safety import guard_training
+        from .retention import retain_best
+        import time
+        import torch
+        sampler = ResourceSampler()
+        sampler.start()
+        started = time.perf_counter()
+        tr = None
+        status, error = 'failed', None
+        stage = {'name': 'trainer initialization'}
         try:
-            tr.run()
-        except KeyboardInterrupt:
-            tr.save()
-            print('Interrupted; saved ckpt_latest.pt', flush=True)
+            torch.cuda.reset_peak_memory_stats(cfg.device)
+            tr = Trainer(cfg)
+            with guard_training(tr) as stage:
+                with retain_best(tr, manifest):
+                    try:
+                        tr.run()
+                        status = 'completed' if tr.iteration >= cfg.schedule.total_iterations else 'time_limited'
+                    except KeyboardInterrupt:
+                        tr.save()
+                        status = 'interrupted'
+                        print('Interrupted; evaluated the final candidate and retained best.pt', flush=True)
+        except FloatingPointError as exc:
+            status, error = 'numerical_failure', str(exc)
+            raise
+        except torch.cuda.OutOfMemoryError as exc:
+            status, error = 'out_of_memory', str(exc)
+            raise ValueError('Full native training ran out of GPU memory; original settings were retained') from exc
+        except BaseException as exc:
+            error = f'{type(exc).__name__}: {exc}'
+            raise
         finally:
-            if tr.writer:
-                tr.writer.close()
-            tr.env.close()
+            resources = sampler.finish()
+            resources.update(status=status, error=error, elapsed_seconds=time.perf_counter() - started,
+                             last_training_stage=stage['name'],
+                             torch_peak_allocated_bytes=torch.cuda.max_memory_allocated(cfg.device),
+                             torch_peak_reserved_bytes=torch.cuda.max_memory_reserved(cfg.device),
+                             num_envs=cfg.env.num_envs, requested_environment_steps=cfg.schedule.total_iterations,
+                             completed_environment_steps=tr.iteration if tr else 0,
+                             completed_updates=tr.num_updates if tr else 0)
+            write_json(log_dir / 'resources.json', resources)
+            if tr is not None:
+                if tr.writer:
+                    tr.writer.close()
+                tr.env.close()

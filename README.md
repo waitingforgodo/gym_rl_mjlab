@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | AMP | [workspace/amp](workspace/amp/README.md) | 舞蹈风格，4096 环境 | 导出 JIT/ONNX 后 `deploy --bundle` |
 | BeyondMimic | [workspace/beyondmimic](workspace/beyondmimic/README.md) | 参考动作跟踪，4096 环境 | 导出包 `deploy --bundle` |
-| SuperMimic | [workspace/supermimic](workspace/supermimic/README.md) | 世界模型 + BPTT，4096 环境 | 直接 `deploy --checkpoint` |
+| SuperMimic | [workspace/supermimic](workspace/supermimic/README.md) | 世界模型 + BPTT，本机 1024 环境 / H=16 | 直接 `deploy --checkpoint` |
 | 速度 PPO | [workspace/velocity](workspace/velocity/README.md) | 平地速度指令，4096 环境 | 导出包 `deploy --bundle` |
 | InstinctMJ | [workspace/instinct](workspace/instinct/README.md) | 行走、单/多动作模仿、感知/VAE、Parkour 与 HOI，默认 256–4096 环境 | JIT/ONNX 包 `deploy --bundle` |
 
@@ -29,13 +29,14 @@ bash g1.sh supermimic --help
 # 先检查配置，不创建仿真或开始训练。
 bash g1.sh amp train --dry-run
 bash g1.sh beyondmimic train --dry-run
-bash g1.sh supermimic train --config workspace/supermimic/profiles/local_8gb.json --dry-run
+bash scripts/19_train_supermimic.sh --dry-run
 
 # 分别执行需要的训练。
 bash g1.sh amp train --iterations 30000 --name dance
 bash g1.sh beyondmimic train --iterations 10000 --name dance_102
-bash g1.sh supermimic train --config workspace/supermimic/profiles/local_8gb.json \
-  --iterations 3000 --name dance
+bash g1.sh supermimic preflight --allow-config-changes \
+  --config workspace/supermimic/profiles/lafan1_4096_h16_eager.json
+bash scripts/19_train_supermimic.sh --name lafan1_4096_h16_eager
 
 # 各自 latest 只选择本方法模型。
 bash g1.sh amp play --checkpoint latest --port 8080
@@ -47,9 +48,11 @@ bash g1.sh test
 bash scripts/07_tensorboard.sh
 ```
 
-AMP/BeyondMimic/速度 PPO 的 `--iterations` 是本次新增优化更新数，SuperMimic 是目标总仿真控制步数；UTD=0.4，3000 控制步约 1184 次更新。SuperMimic 的 `local_8gb.json` 保留 4096 环境与 H=32，缩小 batch/replay；它是通过短测的工程规格，尚未证明论文水平或长训收敛。
+AMP/BeyondMimic/速度 PPO 的 `--iterations` 是本次新增优化更新数，SuperMimic 是目标总仿真控制步数。SuperMimic 的 19 号脚本在此前视频 8GB 方案上，将环境数提升到 4096，保持 H=16、world/policy batch=512、eager；其余训练设置沿用上游，偏差写入 manifest。环境数与 replay 采样 batch 无固定比例，1024/2048/4096 环境各已通过 50 步/4 次更新容量短测，4096 最低仍剩约 2.07 GiB 显存；通用 `g1.sh supermimic train` 仍为上游严格规格。完整长训和动作效果尚未验证。历史 `local_8gb.json` 已发生长训 NaN。
 
-数据准备、续训、定量评测、导出和仿真部署的完整命令矩阵见 **[workspace/README.md](workspace/README.md)**。默认 BeyondMimic 动作为 `motions/processed/dance_102.npz`，AMP/SuperMimic 为 `amp_dance.npz`；数据准备入口分别为 `beyondmimic prepare` 和 `amp prepare`。
+SuperMimic 只保留上述 4096 环境配置。以后每个 run 在保存点和训练结束时，自动对全部动作做独立整段评测，按成功率、完成比例、回报选出最佳，最终只保留可续训的 `best.pt`；中间权重自动删除，日志与评测记录保留。`latest` 优先读取保留的最佳模型，无需每次手工清理。
+
+数据准备、续训、定量评测、导出和仿真部署的完整命令矩阵见 **[workspace/README.md](workspace/README.md)**。默认 BeyondMimic 动作为 `motions/processed/dance_102.npz`，AMP 为 `amp_dance.npz`；SuperMimic 使用 `supermimic prepare` 准备固定版本的 LAFAN1 40 段动作。
 
 Instinct 新训练的例子（`--iterations` 为新增 PPO 更新数）：
 

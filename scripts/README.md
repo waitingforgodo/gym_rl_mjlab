@@ -28,22 +28,24 @@ bash ~/g1-mjlab-workspace/scripts/06_evaluate_forward.sh
 bash ~/g1-mjlab-workspace/scripts/07_tensorboard.sh
 ```
 
-SuperMimic 的 19 号训练、20 号回放、`supermimic/evaluate.py` 现已切换到 `workspace/supermimic/upstream`，使用原运行环境。默认动作 `amp_dance.npz`；上游默认 4096 环境，但原全 batch 的本机显存容量尚未验证。与旧代码的详细差异、已通过的 4096 工程短测规格见 [上游替换与实现差异](../docs/SuperMimic上游替换与实现差异.md)。新 `--iterations` 为目标总仿真控制步，3000 步约有 1184 次更新，不能按旧版优化更新数理解。
+SuperMimic 的 19 号训练、20 号回放、`supermimic/evaluate.py` 使用固定 `workspace/supermimic/upstream`，继续复用原运行环境。只保留 **4096 环境、H=16、world/policy batch=512、eager**（`lafan1_4096_h16_eager.json`）这一份最高已验证配置；使用完整 LAFAN1 40 段数据，其余训练设置保留上游默认，五项字段差异记录到 manifest。低规格与重复配置已删除。直接调用 `g1.sh supermimic train` 或给 19 号传 `--strict-upstream` 仍使用原始 dataclass，无需另一份配置文件。新 `--iterations` 为目标总控制步，默认 320000。
 
 旧 SuperMimic 代码、兼容入口、诊断工具及产物已清理，临时短测模型也已清空。当前须先训练再回放。上游没有部署包导出功能，直接用 20 号仿真回放；原 21/22 号随旧部署代码移除。
 
 ```bash
-# 只检查上游默认参数与动作，不创建仿真。
-bash scripts/19_train_supermimic.sh --iterations 3000 --dry-run
-
-# 本机 4096 环境短测规格，延长预算；batch/replay 小于上游默认。
-bash scripts/19_train_supermimic.sh --iterations 3000 --name reproduced_dance_3000 \
-  --replay-capacity 64 --world-batch-size 256 --world-batches-per-update 1 \
-  --policy-batch-size 128 --horizon 32 --no-compile --save-interval 500
+# 校验当前 4096/H16、batch=512、eager 设置和固定数据，不创建仿真。
+bash scripts/19_train_supermimic.sh --dry-run
+# 当前设置的实际显存容量下界检查。
+bash g1.sh supermimic preflight --allow-config-changes \
+  --config workspace/supermimic/profiles/lafan1_4096_h16_eager.json
+# 只有容量通过后才执行训练。
+bash scripts/19_train_supermimic.sh --name lafan1_4096_h16_eager
 bash scripts/07_tensorboard.sh --logdir "$PWD/outputs/supermimic/runs"
 bash scripts/20_play_supermimic.sh --checkpoint latest --port 8080
 bash g1.sh --python scripts/supermimic/evaluate.py --checkpoint latest
 ```
+
+所有 SuperMimic train/resume 入口默认自动选优与清理：每个保存点及结束时独立评测全部动作，按整段成功率、完成比例、回报比较，每个 run 只保留可续训的 `best.pt`。同一步的重复保存合并，编号/latest 副本自动删除；`latest` 优先解析保留的最佳。日志与评测报告保留；评测失败会保护已有最佳并保留一份待查候选。数值防护继续拒绝 NaN/Inf。详情见 [上游替换与实现差异](../docs/SuperMimic上游替换与实现差异.md)。
 
 ## 全部入口
 
@@ -67,7 +69,7 @@ bash g1.sh --python scripts/supermimic/evaluate.py --checkpoint latest
 
 - `17_prepare_amp_motion.sh`：将本地 AMP 舞蹈转换为当前 G1 标准 NPZ，相同来源的已有数据校验后复用。
 - `18_train_amp_dance.sh`：默认 `amp_dance_4096`、4096 环境、30000 更新，判别器参数保持实际 4096 容量短测时的设置。
-- `19_train_supermimic.sh`：新上游世界模型/BPTT，默认 4096 环境；预算单位为总控制步，默认 320000，40 步填充 replay 后 UTD=0.4。
+- `19_train_supermimic.sh`：上游世界模型/BPTT，当前默认 4096 环境、H=16、world/policy batch=512、eager；其余设置沿用上游，默认 320000 总控制步。`--strict-upstream` 回到完整原始规格。
 - `20_play_supermimic.sh`：上游 checkpoint 网页/原生回放或无界面链路检查。
 - `21_train_instinct.sh`：默认 Instinct 行走、4096 环境；`--profile` 可选全部 10 个 Instinct profile，`--iterations` 为本次新增 PPO 更新数。高级数据用 `g1.sh instinct prepare-lafan` 或 `prepare-scene` 准备。
 - `22_play_instinct.sh`：仅回放 Instinct 模型，可用 `--profile` 限定 latest 的任务，输出网页链接。

@@ -30,6 +30,8 @@ def inference_context(args):
     files = data_files(cfg)
     check_data_contract(path, files)
     policy, _ = load_policy_from_checkpoint(path, args.device)
+    from .safety import require_finite
+    policy.register_forward_hook(lambda module, inputs, output: require_finite(output, 'inference actions'))
     print(f'CHECKPOINT={path}', flush=True)
     return path, policy, cfg, files
 

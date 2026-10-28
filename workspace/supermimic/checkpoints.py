@@ -7,14 +7,16 @@ from .configuration import digest
 
 def resolve_checkpoint(value):
     """latest 仅搜索此实现的专用训练目录。"""
-    if str(value) == 'latest':
-        candidates = list(RUNS.glob('*/ckpt_latest.pt'))
+    if str(value) in ('latest', 'best'):
+        candidates = [p for folder in RUNS.glob('*') if folder.is_dir()
+                      for p in [folder / 'best.pt' if (folder / 'best.pt').is_file() else folder / 'ckpt_latest.pt']
+                      if p.is_file()]
         if not candidates:
             raise FileNotFoundError('No SuperMimic-Reproduced checkpoint; train with scripts/19_train_supermimic.sh')
         return max(candidates, key=lambda p: p.stat().st_mtime_ns)
     path = Path(value).expanduser().resolve()
     if path.is_dir():
-        path = path / 'ckpt_latest.pt'
+        path = path / ('best.pt' if (path / 'best.pt').is_file() else 'ckpt_latest.pt')
     if not path.is_file():
         raise FileNotFoundError(path)
     manifest = path.parent / 'run_manifest.json'
@@ -31,6 +33,8 @@ def load_checkpoint(path):
     ck = torch.load(path, map_location='cpu', weights_only=False)
     if not isinstance(ck, dict) or not {'wm', 'policy', 'critic', 'config', 'iteration'} <= ck.keys():
         raise ValueError('Expected a SuperMimic-Reproduced checkpoint')
+    from .safety import require_finite
+    require_finite(ck, f'checkpoint {Path(path).name}')
     return ck
 
 

@@ -31,7 +31,10 @@ workspace/
 │   ├── inference.py           回放、整段 benchmark
 │   ├── deployment.py          直接 checkpoint 仿真
 │   ├── runtime.py, paths.py   原运行环境与源码路径
-│   ├── profiles/local_8gb.json 本机缩小 batch/replay 的工程规格
+│   ├── strict.py, safety.py    上游参数/数据契约与数值防护
+│   ├── capacity.py            原始尺寸的显存容量下界检查
+│   ├── retention.py           独立整段评测选优、每个 run 仅留 best.pt
+│   ├── profiles/              仅 lafan1_4096_h16_eager.json
 │   └── upstream/              固定提交的完整 SuperMimic-Reproduced
 ├── velocity/                  速度指令 PPO，接口布局同上
 │   └── profiles/
@@ -130,19 +133,23 @@ bash g1.sh beyondmimic deploy --bundle /完整路径/部署包 --headless --seco
 
 ## SuperMimic
 
+当前本机训练入口保持 4096 环境、H=16、world/policy batch=512、eager；其余训练设置沿用上游，LAFAN1 40 段数据保持完整。使用 `bash scripts/19_train_supermimic.sh --dry-run` 检查、`bash scripts/19_train_supermimic.sh --name lafan1_4096_h16_eager` 开始新 run。只保留 `workspace/supermimic/profiles/lafan1_4096_h16_eager.json` 这一份最高已验证配置，低规格与重复配置已删除，五项字段偏差写入 manifest。4096 更新短测的 PyTorch 峰值约 4.41 GiB，完整长训仍未验收。
+
+每次 SuperMimic train/resume 默认在保存点和结束时独立评测所有动作，依次比较整段成功率、完成比例、回报，每个 run 只保留可续训的 `best.pt`，中间权重自动删除。`latest`/run 目录优先解析该最佳文件，旧 latest 格式仍可读。日志、清理与评测记录保留；其他 run 和其他算法模型不受本 run 清理影响。评测失败时保护已有最佳并保留一份候选供排查。
+
+下面保留通用上游严格入口；19 号脚本传 `--strict-upstream` 时也使用该规格：
+
 ```bash
-# 显式选本机小 batch/replay 规格；保持 4096 环境和 H=32。
-bash g1.sh supermimic train --config workspace/supermimic/profiles/local_8gb.json --dry-run
-bash g1.sh supermimic train --config workspace/supermimic/profiles/local_8gb.json \
-  --iterations 3000 --name dance
-bash g1.sh supermimic resume --checkpoint outputs/supermimic/runs/dance/ckpt_latest.pt \
-  --iterations 7540 --name dance_continue
+bash g1.sh supermimic prepare
+bash g1.sh supermimic train --dry-run
+bash g1.sh supermimic preflight
+bash g1.sh supermimic train --name lafan1_upstream
 bash g1.sh supermimic play --checkpoint latest --port 8080
 bash g1.sh supermimic evaluate --checkpoint latest
 bash g1.sh supermimic deploy --checkpoint latest --headless --steps 500
 ```
 
-不传 `--config` 时保留上游原默认 batch；其本机全 batch 显存容量未验证。`local_8gb.json` 改小 batch/replay，是通过短测的工程规格，不等于论文参数或已证明收敛的训练方案。当前上游不提供独立 JIT/ONNX 包导出或真机部署，`deploy` 就是直接 checkpoint 仿真。详情见 [上游实现说明](../docs/SuperMimic上游替换与实现差异.md)。
+通用严格入口对齐上游参数：4096 环境、replay 1000、world batch 2048×10、policy batch 4096、H=32、320000 总控制步及全部 40 段 LAFAN1。本机原始尺寸预检仅 replay/策略图就分配约 11.04 GiB，超过 7.96 GiB 物理显存，正式训练会被阻止。历史不稳定配置文件已删除；当前唯一配置显式记录所有偏差。训练/保存/加载遇 NaN/Inf 会拒绝继续，原上游算法源码不改。运行环境差异单独记录，尚未达到依赖锁定环境的完整复现。详情见 [上游实现说明](../docs/SuperMimic上游替换与实现差异.md)。
 
 ## 产物、旧模型和快捷脚本
 
