@@ -38,4 +38,4 @@ export OMP_NUM_THREADS="${G1_CPU_THREADS:-2}"
 export PYTHONNOUSERSITE=1
 export PYTHONDONTWRITEBYTECODE=1
 exec nice -n 10 "$G1_RUNTIME/.venv/bin/python" -m tensorboard.main \
-  --logdir "$G1_ROOT/outputs/runs" --host 127.0.0.1 --port 6006 "$@"
+  --logdir "$G1_ROOT/outputs" --host 127.0.0.1 --port 6006 "$@"

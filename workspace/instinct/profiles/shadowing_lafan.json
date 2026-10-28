@@ -1,0 +1,11 @@
+{
+  "profile": "shadowing_lafan",
+  "task": "Instinct-Shadowing-WholeBody-Plane-G1-v0",
+  "num_envs": 4096,
+  "iterations": 30000,
+  "seed": 42,
+  "save_interval": 1000,
+  "log_interval": 10,
+  "motion": null,
+  "motion_dir": "motions/processed/instinct/lafan1"
+}

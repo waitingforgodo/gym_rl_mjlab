@@ -1,0 +1,128 @@
+"""Convert PHALP motion tracking data to AMASS format pose files.
+
+Transforms PHALP (4D-Human / Tracking Humans As Landmarks in Poses)
+output into standard AMASS npz format for downstream retargeting.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+import joblib
+import mjlab
+import numpy as np
+import quaternion as npq
+import tqdm
+import tyro
+
+CAM_ROT = npq.from_euler_angles([0.0, -np.pi / 2, 0.0]) * npq.from_euler_angles([np.pi / 2, 0.0, 0.0])
+# CAM_ROT = npq.from_euler_angles([0., -np.pi/6, 0.]) * CAM_ROT # Add pitch if you see the video camera is not horizontal
+CAM_POS = np.array([0, 0, 0.4])
+
+
+@dataclass(frozen=True)
+class PhalpToAmassConfig:
+    """Configuration for converting PHALP tracking data to AMASS format."""
+
+    input: str
+    """Input PHALP motion tracking data file."""
+    output: str
+    """Output AMASS format pose file."""
+    focal_x: float = 0.4
+    """Normalized focal length of the camera in the x-axis."""
+    fps: int = 25
+    """Frame rate written to the output because human-mesh-reconstruction does not provide it."""
+
+
+def main(cfg: PhalpToAmassConfig) -> None:
+    """Transforming PHALP motion tracking data to AMASS format pose file"""
+    results = joblib.load(cfg.input)
+
+    num_frames = len(results.keys())
+    poses = np.zeros(
+        (
+            num_frames,  # number of frames
+            24,
+            3,
+        )
+    )
+    trans = np.zeros(
+        (
+            num_frames,
+            3,
+        )
+    )
+    for frame_idx, key in tqdm.tqdm(enumerate(results.keys())):
+        # assuming the keys are in frame order
+        frame = results[key]
+
+        if len(frame["size"]) == 0:
+            print("No size info in frame", frame_idx)
+            poses = poses[:frame_idx]
+            trans = trans[:frame_idx]
+            break
+
+        img_H, img_W = frame["size"][0]
+        fx = cfg.focal_x
+        fy = fx * img_H / img_W
+
+        # root pose in camera frame
+        trans_ = frame["camera"][0]
+        trans_ = (
+            np.array(
+                [
+                    trans_[0] / fx * trans_[2],
+                    trans_[1] / fy * trans_[2],
+                    trans_[2],
+                ]
+            )
+            / 1000.0
+        )  # mm to m
+        root_quat = npq.from_rotation_matrix(frame["smpl"][0]["global_orient"])  # (1, 4)
+
+        # root pose in world frame
+        trans_ = (
+            npq.rotate_vectors(
+                CAM_ROT,
+                trans_,
+            )
+            + CAM_POS
+        )
+        root_quat = CAM_ROT * root_quat
+
+        trans[frame_idx] = trans_
+        body_quat = npq.from_rotation_matrix(frame["smpl"][0]["body_pose"])  # (23, 4)
+        poses[frame_idx] = npq.as_rotation_vector(
+            np.concatenate(
+                [
+                    root_quat,
+                    body_quat,
+                ]
+            )
+        )
+
+    # plt.plot(np.arange(num_frames) * 1/cfg.fps, trans[:, 0], label="x")
+    # plt.plot(np.arange(num_frames) * 1/cfg.fps, trans[:, 1], label="y")
+    # plt.plot(np.arange(num_frames) * 1/cfg.fps, trans[:, 2], label="z")
+    # plt.plot(np.arange(num_frames) * 1/cfg.fps, poses[:, 0, 0], label="x")
+    # plt.plot(np.arange(num_frames) * 1/cfg.fps, poses[:, 0, 1], label="y")
+    # plt.plot(np.arange(num_frames) * 1/cfg.fps, poses[:, 0, 2], label="z")
+    # plt.legend()
+    # plt.show()
+
+    # write to AMASS format pose file
+    data = {
+        "poses": poses,
+        "trans": trans,
+        "mocap_framerate": cfg.fps,
+    }
+    np.savez(cfg.output, **data)  # type: ignore
+
+
+def entry_point() -> None:
+    """CLI entry point for ``instinct-phalp-to-amass``."""
+    main(tyro.cli(PhalpToAmassConfig, config=mjlab.TYRO_FLAGS))
+
+
+if __name__ == "__main__":
+    entry_point()

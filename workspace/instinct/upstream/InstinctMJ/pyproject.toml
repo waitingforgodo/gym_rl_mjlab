@@ -1,0 +1,104 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "instinct-mj"
+version = "0.1.0"
+description = "mjlab-native port of InstinctLab for humanoid RL and instinct_rl workflows."
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.10,<3.14"
+dependencies = [
+  "tyro>=1.0.1",
+  "prettytable>=3.0.0",
+  "PyYAML>=6.0",
+  "numpy>=1.24,<2.5",
+  "gymnasium>=0.29",
+  "opencv-python>=4.8",
+  "pyvista",
+  "mediapy>=1.2.0",
+  "regex>=2024.0.0",
+  "pytorch-kinematics",
+  "scikit-learn",
+  "numpy-quaternion",
+  "onnxruntime",
+  "pandas",
+  "coacd",
+  "shapely>=2.0",
+  "warp-lang>=1.14.0",
+  "mujoco-warp~=3.11.0",
+  "mujoco~=3.11.0",
+  "mjlab==1.6.0",
+  "instinct_rl",
+]
+
+[project.scripts]
+instinct-train = "instinct_mj.scripts.instinct_rl.train:main"
+instinct-play = "instinct_mj.scripts.instinct_rl.play:main"
+instinct-list-envs = "instinct_mj.scripts.list_envs:main"
+instinct-amass-filter = "instinct_mj.scripts.amass_filter:entry_point"
+instinct-amass-visualize = "instinct_mj.scripts.amass_visualize:main"
+instinct-gmr-to-instinct = "instinct_mj.scripts.GMR_to_instinct:main"
+instinct-motion-metadata = "instinct_mj.scripts.motion_matched_metadata_generator:entry_point"
+instinct-phalp-to-amass = "instinct_mj.scripts.phalp_to_amass:entry_point"
+
+[tool.uv]
+environments = [
+  "sys_platform == 'darwin' and platform_machine == 'arm64'",
+  "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+required-environments = [
+  "sys_platform == 'darwin' and platform_machine == 'arm64'",
+  "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+
+[[tool.uv.index]]
+name = "nvidia"
+url = "https://pypi.nvidia.com/"
+explicit = true
+
+[tool.uv.sources]
+instinct_rl = { git = "https://github.com/project-instinct/instinct_rl.git" }
+mjlab = { path = "../mjlab", editable = true }
+warp-lang = { index = "nvidia", marker = "sys_platform != 'darwin'" }
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+instinct_mj = [
+  "assets/resources/unitree_g1/*.xml",
+  "assets/resources/unitree_g1/xml/*.xml",
+  "assets/resources/unitree_g1/urdf/*.urdf",
+  "assets/resources/unitree_g1/meshes/*.STL",
+  "assets/resources/unitree_g1/meshes/*.stl",
+  "tasks/parkour/mjcf/*.xml",
+]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.black]
+line-length = 120
+target-version = ["py310"]
+preview = true
+
+[tool.isort]
+atomic = true
+profile = "black"
+line_length = 120
+py_version = 310
+skip_glob = ["docs/*", "logs/*", "outputs/*", "videos/*"]
+group_by_package = true
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+known_firstparty = ["instinct_mj"]
+known_thirdparty = ["instinct_rl", "mjlab", "mujoco"]

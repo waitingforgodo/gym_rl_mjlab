@@ -1,4 +1,4 @@
-"""G1 独立仿真工作空间：入口见 cli，核心桥接见 runtime，纯协议见 contract。
+"""G1 仿真工作空间：按 amp/beyondmimic/supermimic/velocity/instinct 组织。
 
-本包不在导入时启动训练；耗时操作必须由明确的 CLI 子命令触发。
+公共实现见 common；入口和命令矩阵见 README.md。导入本包不启动训练。
 """

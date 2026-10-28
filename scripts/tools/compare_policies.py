@@ -14,9 +14,9 @@ from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from workspace.cli import ROOT, emit, positive, resolve
-from workspace.contract import sha256, write_json
-from workspace.inference import evaluate, load_for_inference
-from workspace.runtime import checkpoint_context
+from workspace.common.contract import sha256, write_json
+from workspace.common.inference import evaluate, load_for_inference
+from workspace.common.runtime import checkpoint_context
 
 
 def main():

@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from workspace.cli import ROOT, emit, parser
-from workspace.deployment import deploy_sim
+from workspace.common.deployment import deploy_sim
 
 
 def main():

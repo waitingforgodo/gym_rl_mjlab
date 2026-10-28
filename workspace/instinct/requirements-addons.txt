@@ -1,0 +1,22 @@
+# Only supplementary packages; install with --no-deps --target .cache/instinct-deps
+absl-py==2.5.1
+arm_pytorch_utilities==0.5.0
+coacd==1.0.7
+coloredlogs==15.0.1
+flatbuffers==25.12.19
+humanfriendly==10.0
+joblib==1.5.3
+lxml==6.1.3
+numpy-quaternion==2024.0.13
+onnxruntime==1.24.2
+opencv-python-headless==4.13.0.92
+pandas==3.0.1
+pytorch-kinematics==0.7.6
+pytorch-seed==0.2.0
+regex==2026.2.19
+scikit-learn==1.8.0
+shapely==2.1.2
+tensorboardX==2.6.4
+termcolor==3.3.0
+threadpoolctl==3.6.0
+urdf_parser_py==0.0.4

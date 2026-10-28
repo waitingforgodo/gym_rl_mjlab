@@ -10,16 +10,16 @@
 
 | 要查看的内容 | 本空间代码 | 作用 |
 | --- | --- | --- |
-| 从零训练、续训 | [training.py](../workspace/training.py) | 配置、运行目录、checkpoint 恢复、启动 PPO、保存资源记录 |
-| 回放、评估 | [inference.py](../workspace/inference.py) | 加载 actor、推理、终止统计、RMSE、可视化 |
-| 评估协议 | [evaluation.py](../workspace/evaluation.py) | 固定机体系速度、存活比例、失败事件口径 |
-| 导出 | [exporting.py](../workspace/exporting.py) | JIT/ONNX、数值对比、观测/动作清单、文件哈希 |
-| 仿真部署 | [deployment.py](../workspace/deployment.py) | 仅加载 JIT，通过环境执行闭环控制 |
-| 公共初始化与配置 | [runtime.py](../workspace/runtime.py) | 固定版本、任务注册、环境和 runner 构造 |
-| 动作数据准备 | [motion.py](../workspace/motion.py) | CSV 重采样、四元数转换、正运动学、NPZ 检查 |
-| 模型选择、关节映射、契约 | [contract.py](../workspace/contract.py) | 数字模型编号、29 关节映射、续训一致性 |
-| 曲线与资源采样 | [telemetry.py](../workspace/telemetry.py) | TensorBoard 数据、吞吐、剩余内存/显存 |
-| 耗时兼容 | [timing.py](../workspace/timing.py) | runner 使用单调时钟，避免时间回拨导致负耗时 |
+| 从零训练、续训 | [training.py](../workspace/common/training.py) | 配置、运行目录、checkpoint 恢复、启动 PPO、保存资源记录 |
+| 回放、评估 | [inference.py](../workspace/common/inference.py) | 加载 actor、推理、终止统计、RMSE、可视化 |
+| 评估协议 | [evaluation.py](../workspace/common/evaluation.py) | 固定机体系速度、存活比例、失败事件口径 |
+| 导出 | [exporting.py](../workspace/common/exporting.py) | JIT/ONNX、数值对比、观测/动作清单、文件哈希 |
+| 仿真部署 | [deployment.py](../workspace/common/deployment.py) | 仅加载 JIT，通过环境执行闭环控制 |
+| 公共初始化与配置 | [runtime.py](../workspace/common/runtime.py) | 固定版本、任务注册、环境和 runner 构造 |
+| 动作数据准备 | [motion.py](../workspace/common/motion.py) | CSV 重采样、四元数转换、正运动学、NPZ 检查 |
+| 模型选择、关节映射、契约 | [contract.py](../workspace/common/contract.py) | 数字模型编号、29 关节映射、续训一致性 |
+| 曲线与资源采样 | [telemetry.py](../workspace/common/telemetry.py) | TensorBoard 数据、吞吐、剩余内存/显存 |
+| 耗时兼容 | [timing.py](../workspace/common/timing.py) | runner 使用单调时钟，避免时间回拨导致负耗时 |
 
 上述依赖的源码副本也已加入当前仓库：[mjlab 1.6.0](../third_party/mjlab-v1.6.0/src/mjlab/)、[RSL-RL 5.4.2](../third_party/rsl_rl-v5.4.2/rsl_rl/)。可直接在 IDE 中搜索和阅读，入口及版本校验说明见 [third_party/README.md](../third_party/README.md)。副本包含全部 222 个 Python 文件，按源码仓库约定排除了网格和运行产物；修改副本不会自动影响训练。
 

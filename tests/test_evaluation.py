@@ -1,7 +1,7 @@
 """评估回归测试：覆盖这次真实日志中容易误解的统计与固定命令分支。"""
 import unittest
 from types import SimpleNamespace as NS
-from workspace.evaluation import configure_fixed_velocity, is_direct_metric, survival_statistics, velocity_protocol
+from workspace.common.evaluation import configure_fixed_velocity, is_direct_metric, survival_statistics, velocity_protocol
 
 
 def velocity_cfg():

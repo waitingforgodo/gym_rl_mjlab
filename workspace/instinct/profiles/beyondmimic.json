@@ -1,0 +1,10 @@
+{
+  "profile": "beyondmimic",
+  "task": "Instinct-BeyondMimic-Plane-G1-v0",
+  "num_envs": 4096,
+  "iterations": 30000,
+  "seed": 42,
+  "save_interval": 100,
+  "log_interval": 1,
+  "motion": "motions/processed/instinct/amp_dance_retargeted.npz"
+}

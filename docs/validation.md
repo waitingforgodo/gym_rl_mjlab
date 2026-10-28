@@ -1,5 +1,29 @@
 # 验证范围
 
+## 2026-10-28 InstinctMJ 工具链接入
+
+新增 `workspace/instinct/`，固定官方 InstinctMJ 和匹配的 instinct_rl 源码，原 Python/PyTorch/CUDA/mjlab 环境不升级，附加依赖安装到项目缓存。三份 profile 为原生 locomotion / BeyondMimic / Whole-body Shadowing，默认均为 4096；16 个上游注册 ID 不代表高级任务的数据与场景全部就绪。
+
+66 项回归测试通过；三类任务分别通过 8 环境真实短训和 4096 环境 1 次更新，行走另续训 1 次。行走和 BeyondMimic 都已完成评测、JIT/ONNX 真实观测对照与两种引擎独立仿真；BeyondMimic 部署包复制到不同目录后依然读取包内动作。JIT/ONNX 最大绝对误差均小于 2e-7。动作转换处理 torso 根与三处 waist 反号，采样 FK 最大位置差约 1.1 cm，并通过非零 waist 角的 CPU 回归。
+
+原模型/数据/配置保护项已核对，旧入口保留。短测模型、部署包与评测文件在验收后清理，仅保留转换后的动作和本地辅助依赖。这是功能与短时容量验收，不代表正式动作质量、长训收敛或真机能力。NumPy 高于上游声明上限、pyvista 未安装、固定版本非商业许可等边界与各项数值见 [InstinctMJ 接入与完整工具链](InstinctMJ接入与完整工具链.md)；命令见 [使用说明](../workspace/instinct/README.md)。
+
+## 2026-10-28 按方法整理 workspace
+
+AMP、BeyondMimic、SuperMimic、速度 PPO 的接口和配置集中到各自方法目录，共享流程在 `workspace/common/`；完整上游 SuperMimic 源码迁入 `workspace/supermimic/upstream/`。模型原位置、原配置字节、AMP 原算法/类路径与环境配方内容保留，未更换运行环境。方法级 `latest` 兼容旧正式训练目录，并根据清单筛选算法，不选择 benchmark。
+
+59 项回归测试通过，包括四种方法帮助的轻量导入、跨方法模型拒绝、配置定位和既有 AMP 指纹。真实 GPU 验证：旧 AMP/BeyondMimic 模型加载后各评测 1 秒；两方法各完成 8 环境、1 次 PPO 更新，导出 JIT/ONNX，并使用新导出包和已有包各完成 1 秒无界面仿真；SuperMimic 完整网络、H=32、8 环境完成 43 控制步/1 次真实更新，再通过独立 deploy 接口仿真 10 步。
+
+这些检查仅验证目录迁移和功能接口。新训练产物写入 `outputs/<方法>/`，原产物不移动；本次验证生成的临时模型、部署包和评测文件已清理，不作为可部署策略交付。原模型/动作文件、配置哈希及上游 72 个来源文件均核对未改。命令、参数单位和各方法部署差异见 [统一方法接口](../workspace/README.md)。
+
+## 2026-10-28 SuperMimic 上游实现与清理
+
+当前只维护固定提交的 SuperMimic-Reproduced 与本地连接层，继续使用原 Python/CUDA/mjlab 环境。旧实现、兼容入口、专用 profile、诊断文档/工具/报告、旧模型与部署包已删除，接入时的临时短测模型一并清空；现在没有可直接回放的 SuperMimic checkpoint，需要重新训练。
+
+接入阶段已验证真实仿真采集、世界模型/actor/critic 更新、保存、续训、回放与整段 benchmark；4096 环境采用缩小 batch/replay 的工程规格通过短测，原全 batch 的本机显存容量和长训收敛仍未验证。上游原测试当时为 7 项通过、17 项因缺 LAFAN1 数据跳过；这不代表完整论文数据集验收通过。
+
+清理后 55 项回归测试通过，覆盖当前入口、模型格式/动作契约及 AMP/BeyondMimic。训练 dry-run 通过；空记录下的回放明确提示先训练。共享 recipes.py 删除废弃分支后恢复为现有行走/跟踪模型清单记录的原始 SHA-256，无需放宽模型契约。AMP/BeyondMimic 的模型、部署包和动作数据保留。运行命令与实现差异见 [SuperMimic 上游说明](SuperMimic上游替换与实现差异.md)。以下保留其他任务的验证记录。
+
 ## 2026-10-27 4096 并行容量验证与默认配置
 
 AMP 的 2048 环境、30000 更新正式训练成功生成 `model_29999.pt`，资源记录状态为 `passed`。训练结束后，AMP、BeyondMimic 完整状态和无状态估计任务依次完成 4096 环境、各 30 次更新的容量短测；三项均 `status=passed`、`timing_valid=true`。
@@ -60,7 +84,7 @@ AMP 的 2048 环境、30000 更新正式训练成功生成 `model_29999.pt`，�
 
 ## 2026-10-26 独立程序与源码拆分
 
-将原 `workspace/runtime.py` 的训练、推理/评估、导出、仿真部署实现分别移到 `training.py`、`inference.py`、`exporting.py`、`deployment.py`；原函数保留延迟兼容转发。对迁移前后的六个业务函数进行 AST 比对，语句保持一致，仅增加说明性注释。
+将原 `workspace/common/runtime.py` 的训练、推理/评估、导出、仿真部署实现分别移到 `training.py`、`inference.py`、`exporting.py`、`deployment.py`；原函数保留延迟兼容转发。对迁移前后的六个业务函数进行 AST 比对，语句保持一致，仅增加说明性注释。
 
 当前工作空间实际执行 `bash g1.sh test`，**29 项测试全部通过**，包括原 25 项和新增的独立入口集成检查：9 个程序从其他目录调用帮助成功、无效参数在初始化前被拒绝、拆分模块没有循环导入或提前加载 GPU 框架、27 个安装源码路径全部存在。另通过 27 个 Python 文件语法解析、17 个 Bash 文件语法检查、profile JSON 解析和教程本地链接检查。
 

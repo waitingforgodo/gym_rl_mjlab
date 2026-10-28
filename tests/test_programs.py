@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest
 
-from workspace.source_map import locate_sources
+from workspace.common.source_map import locate_sources
 
 ROOT = Path(__file__).resolve().parents[1]
 PROGRAMS = (
@@ -25,8 +25,7 @@ PROGRAMS = (
     'scripts/tools/prepare_amp_motion.py',
     'scripts/supermimic/train.py',
     'scripts/supermimic/play.py',
-    'scripts/supermimic/export.py',
-    'scripts/supermimic/deploy_sim.py',
+    'scripts/supermimic/evaluate.py',
 )
 
 
@@ -63,7 +62,7 @@ class ProgramTests(unittest.TestCase):
         """检查导入依赖环和重依赖泄漏，保证帮助与文件工具仍是轻量入口。"""
         code = '''
 import sys
-from workspace import runtime, training, inference, exporting, deployment, source_map
+from workspace.common import runtime, training, inference, exporting, deployment, source_map
 assert 'torch' not in sys.modules
 assert 'warp' not in sys.modules
 assert 'mjlab' not in sys.modules
@@ -105,7 +104,6 @@ assert callable(runtime.train) and callable(runtime.deploy_sim)
                 self.assertEqual(result.returncode, 2, result.stderr)
                 self.assertIn(expected, result.stderr)
                 self.assertNotIn('Traceback', result.stderr)
-
 
 if __name__ == '__main__':
     unittest.main()

@@ -3,8 +3,8 @@ import time
 import unittest
 from types import SimpleNamespace
 
-from workspace.telemetry import timing_statistics
-from workspace.timing import monotonic_runner_clock
+from workspace.common.telemetry import timing_statistics
+from workspace.common.timing import monotonic_runner_clock
 
 
 class TimingTests(unittest.TestCase):

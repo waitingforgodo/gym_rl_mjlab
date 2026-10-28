@@ -2,7 +2,7 @@
 
 运行：bash g1.sh --python scripts/reinforcement_learning/rsl_rl/train.py \
     --profile velocity_flat_4096 --envs 4096 --iterations 3000 --name walk
-逐步实现见 workspace/training.py；PPO 本体位置用 show-sources 查看。
+逐步实现见 workspace/common/training.py；PPO 本体位置用 show-sources 查看。
 """
 import sys
 from pathlib import Path
@@ -12,8 +12,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from workspace.cli import ROOT, emit, parser, training_lock
-from workspace.telemetry import summarize
-from workspace.training import train
+from workspace.common.telemetry import summarize
+from workspace.common.training import train
 
 
 def main():

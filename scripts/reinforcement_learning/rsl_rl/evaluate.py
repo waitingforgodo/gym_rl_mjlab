@@ -11,8 +11,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from workspace.cli import ROOT, emit, parser, resolve
-from workspace.contract import write_json
-from workspace.inference import evaluate, load_for_inference
+from workspace.common.contract import write_json
+from workspace.common.inference import evaluate, load_for_inference
 
 
 def main():

@@ -6,9 +6,10 @@ from pathlib import Path
 from types import SimpleNamespace
 import unittest
 
-from workspace.configuration import (apply_agent_overrides, effective_agent_sha256,
+from workspace.common.configuration import (apply_agent_overrides, effective_agent_sha256,
                                      inherited_run_options, validate_ppo_config)
-from workspace.contract import validate_resume
+from workspace.common.contract import validate_resume
+from workspace.common.profiles import profile_path
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -60,7 +61,7 @@ class ConfigurationTests(unittest.TestCase):
         )
         for name in names:
             with self.subTest(profile=name):
-                profile = json.loads((ROOT / 'profiles' / f'{name}.json').read_text(encoding='utf-8'))
+                profile = json.loads((profile_path(ROOT, name)).read_text(encoding='utf-8'))
                 self.assertEqual(profile['num_envs'], 4096)
 
     def test_nested_dictionary_override_and_tuple_conversion(self):

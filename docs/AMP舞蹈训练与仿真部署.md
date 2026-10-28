@@ -16,14 +16,14 @@ AMP 学习专家动作的连续状态分布。actor 不接收参考目标、时�
 | [amp/environment.py](../workspace/amp/environment.py) | 参考状态初始化和自动复位前的终止帧捕获 |
 | [amp/algorithm.py](../workspace/amp/algorithm.py) | PPO 扩展、判别器、梯度惩罚、风格奖励、历史回放和完整续训 |
 | [amp/conversion.py](../workspace/amp/conversion.py) | robot_lab AMP 数据到当前 G1 模型的转换 |
-| [amp_dance_4096.json](../profiles/amp_dance_4096.json) | 当前默认 4096 配置及实测参数说明 |
-| [amp_dance.json](../profiles/amp_dance.json) | 保留的 256 配置，兼容已有 AMP 模型 |
+| [amp_dance_4096.json](../workspace/amp/profiles/amp_dance_4096.json) | 当前默认 4096 配置及实测参数说明 |
+| [amp_dance.json](../workspace/amp/profiles/amp_dance.json) | 保留的 256 配置，兼容已有 AMP 模型 |
 | [prepare_amp_motion.py](../scripts/tools/prepare_amp_motion.py) | 独立数据准备程序 |
 | [17_prepare_amp_motion.sh](../scripts/17_prepare_amp_motion.sh) | CPU 数据转换入口 |
 | [18_train_amp_dance.sh](../scripts/18_train_amp_dance.sh) | AMP 舞蹈训练入口 |
 | [test_amp.py](../tests/test_amp.py) | 真正的 PPO/判别器更新、复位边界、特征、回放及续训测试 |
 
-[runtime.py](../workspace/runtime.py) 在当前进程注册 `Workspace-AMP-Dance-Flat-Unitree-G1`，沿用已有训练、回放、导出和部署程序。第三方源码副本及虚拟环境安装文件保持原样。
+[runtime.py](../workspace/common/runtime.py) 在当前进程注册 `Workspace-AMP-Dance-Flat-Unitree-G1`，沿用已有训练、回放、导出和部署程序。第三方源码副本及虚拟环境安装文件保持原样。
 
 ## 2. 默认动作与数据转换
 

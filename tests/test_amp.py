@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from workspace.contract import SDK_JOINTS, validate_resume
+from workspace.common.contract import SDK_JOINTS, validate_resume
 
 
 @unittest.skipUnless(importlib.util.find_spec('mjlab'), 'requires pinned training packages; no GPU needed')

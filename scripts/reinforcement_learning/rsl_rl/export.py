@@ -2,7 +2,7 @@
 
 运行：bash g1.sh --python scripts/reinforcement_learning/rsl_rl/export.py \
     --checkpoint /完整路径/model_2999.pt
-打印的 DEPLOY_BUNDLE 目录供部署程序使用；实际实现见 workspace/exporting.py。
+打印的 DEPLOY_BUNDLE 目录供部署程序使用；实际实现见 workspace/common/exporting.py。
 """
 import sys
 from pathlib import Path
@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from workspace.cli import ROOT, parser, resolve
-from workspace.exporting import export_bundle
+from workspace.common.exporting import export_bundle
 
 
 def main():

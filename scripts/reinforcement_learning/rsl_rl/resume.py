@@ -10,8 +10,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from workspace.cli import ROOT, emit, parser, resolve, training_lock
-from workspace.telemetry import summarize
-from workspace.training import train
+from workspace.common.telemetry import summarize
+from workspace.common.training import train
 
 
 def main():

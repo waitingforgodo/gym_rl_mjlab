@@ -28,6 +28,16 @@ export NUMBA_CACHE_DIR="$ROOT/.cache/numba"
 if [ "${1:-}" = prepare-motion ] || [ "${1:-}" = prepare-amp-motion ] || [ "${1:-}" = import-reference ] || [ "${1:-}" = inspect-motion ]; then
   export CUDA_VISIBLE_DEVICES=""
 fi
+# 按方法的数据转换也仅使用 CPU。
+if { [ "${1:-}" = amp ] || [ "${1:-}" = beyondmimic ] || [ "${1:-}" = instinct ]; } && [ "${2:-}" = prepare ]; then
+  export CUDA_VISIBLE_DEVICES=""
+fi
+if [ "${1:-}" = supermimic ] && [ "${2:-}" = prepare ]; then
+  export CUDA_VISIBLE_DEVICES=""
+fi
+if [ "${1:-}" = instinct ] && { [ "${2:-}" = prepare-lafan ] || [ "${2:-}" = prepare-scene ]; }; then
+  export CUDA_VISIBLE_DEVICES=""
+fi
 cd "$ROOT"
 mkdir -p "$ROOT/.cache/cuda" "$TMPDIR"
 # "$@" 保留每个参数的边界，支持带空格的路径，不使用 eval 拼命令。

@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from workspace.contract import (SDK_JOINTS, choose_parallelism, joint_permutation,
+from workspace.common.contract import (SDK_JOINTS, choose_parallelism, joint_permutation,
                                 latest_checkpoint, resolve_checkpoint, validate_resume)
 
 

@@ -1,10 +1,14 @@
 # 常用脚本
 
+当前推荐按方法使用 `bash g1.sh amp|beyondmimic|supermimic|velocity|instinct <功能>`。训练、回放、评测和部署代码已集中到对应的 `workspace/<方法>/`；完整目录、参数单位和部署方式见 **[统一方法接口](../workspace/README.md)**。编号脚本和独立 Python 程序继续作为兼容入口。
+
+新增 21–25 号为官方 **[InstinctMJ 工具链](../workspace/instinct/README.md)** 的通用转发入口，共有 10 份 profile：基础行走/模仿默认 4096 环境，高级感知、VAE、Parkour、HOI 默认 256/512 环境。编号脚本不为每个高级 profile 重复建文件。原 21/22 号 SuperMimic 导出脚本已随旧实现移除，当前同编号使用不同文件名，不是旧脚本恢复。Instinct 的模型与原 AMP/RSL-RL 模型不兼容，回放与导出均只选本后端模型。
+
 当前从零训练快捷脚本已经统一切换到 **4096 环境**。AMP、BeyondMimic 完整状态和无状态估计的实测结果见 [4096 并行配置与容量结果](../docs/4096并行配置与容量结果.md)。重复的 2048 profile 已删除；旧运行通过嵌入配置快照兼容。
 
 AMP 舞蹈入口：`17_prepare_amp_motion.sh` 转换本地专家数据，`18_train_amp_dance.sh` 使用独立 AMP 任务训练；默认 `amp_dance_4096`、4096 环境、30000 更新。可在末尾加 `--iterations 100` 做短训，或用 `--motion` 选择其他已转换的标准 NPZ。完整中文说明见 [AMP 舞蹈训练与仿真部署](../docs/AMP舞蹈训练与仿真部署.md)。
 
-需要逐个查看 Python 程序时，训练/续训/回放/评估/导出入口在 `reinforcement_learning/rsl_rl/`，仿真部署入口在 `deploy/deploy_sim.py`。用 `bash g1.sh --python 程序路径 参数...` 启动；核心实现和完整流程见 [训练到仿真部署教程](../docs/training_to_sim_deployment.md)。原有编号 shell 脚本继续可用。
+方法入口在 `workspace/<方法>/cli.py`，训练、推理和部署接口分别在 `training.py`、`inference.py`、`deployment.py`。旧 `reinforcement_learning/rsl_rl/` 和 `deploy/deploy_sim.py` 仍可用 `bash g1.sh --python 程序路径 参数...` 启动，实际复用 `workspace/common/`。完整流程见 [训练到仿真部署教程](../docs/training_to_sim_deployment.md)。
 
 这些脚本安装后位于 `~/g1-mjlab-workspace/scripts/`，即当前独立 mjlab 工作空间内。可以从任何目录执行；统一用 `bash 脚本路径`，不需要手动激活环境或修改执行权限。
 
@@ -24,7 +28,22 @@ bash ~/g1-mjlab-workspace/scripts/06_evaluate_forward.sh
 bash ~/g1-mjlab-workspace/scripts/07_tensorboard.sh
 ```
 
-SuperMimic 使用四个独立程序：`19_train_supermimic.sh` 训练、`20_play_supermimic.sh` 回放、`21_export_supermimic.sh` 导出、`22_deploy_supermimic_sim.sh` 仅加载导出 JIT。完整说明见 [SuperMimic 论文复现与仿真部署](../docs/SuperMimic论文复现与仿真部署.md)。
+SuperMimic 的 19 号训练、20 号回放、`supermimic/evaluate.py` 现已切换到 `workspace/supermimic/upstream`，使用原运行环境。默认动作 `amp_dance.npz`；上游默认 4096 环境，但原全 batch 的本机显存容量尚未验证。与旧代码的详细差异、已通过的 4096 工程短测规格见 [上游替换与实现差异](../docs/SuperMimic上游替换与实现差异.md)。新 `--iterations` 为目标总仿真控制步，3000 步约有 1184 次更新，不能按旧版优化更新数理解。
+
+旧 SuperMimic 代码、兼容入口、诊断工具及产物已清理，临时短测模型也已清空。当前须先训练再回放。上游没有部署包导出功能，直接用 20 号仿真回放；原 21/22 号随旧部署代码移除。
+
+```bash
+# 只检查上游默认参数与动作，不创建仿真。
+bash scripts/19_train_supermimic.sh --iterations 3000 --dry-run
+
+# 本机 4096 环境短测规格，延长预算；batch/replay 小于上游默认。
+bash scripts/19_train_supermimic.sh --iterations 3000 --name reproduced_dance_3000 \
+  --replay-capacity 64 --world-batch-size 256 --world-batches-per-update 1 \
+  --policy-batch-size 128 --horizon 32 --no-compile --save-interval 500
+bash scripts/07_tensorboard.sh --logdir "$PWD/outputs/supermimic/runs"
+bash scripts/20_play_supermimic.sh --checkpoint latest --port 8080
+bash g1.sh --python scripts/supermimic/evaluate.py --checkpoint latest
+```
 
 ## 全部入口
 
@@ -48,6 +67,23 @@ SuperMimic 使用四个独立程序：`19_train_supermimic.sh` 训练、`20_play
 
 - `17_prepare_amp_motion.sh`：将本地 AMP 舞蹈转换为当前 G1 标准 NPZ，相同来源的已有数据校验后复用。
 - `18_train_amp_dance.sh`：默认 `amp_dance_4096`、4096 环境、30000 更新，判别器参数保持实际 4096 容量短测时的设置。
+- `19_train_supermimic.sh`：新上游世界模型/BPTT，默认 4096 环境；预算单位为总控制步，默认 320000，40 步填充 replay 后 UTD=0.4。
+- `20_play_supermimic.sh`：上游 checkpoint 网页/原生回放或无界面链路检查。
+- `21_train_instinct.sh`：默认 Instinct 行走、4096 环境；`--profile` 可选全部 10 个 Instinct profile，`--iterations` 为本次新增 PPO 更新数。高级数据用 `g1.sh instinct prepare-lafan` 或 `prepare-scene` 准备。
+- `22_play_instinct.sh`：仅回放 Instinct 模型，可用 `--profile` 限定 latest 的任务，输出网页链接。
+- `23_export_instinct.sh`：导出冻结归一化器与 actor 的 JIT/ONNX，执行真实观测数值对照。
+- `24_deploy_instinct.sh`：指定 `--bundle`，使用 `--engine jit|onnx` 运行独立仿真。
+- `25_prepare_instinct_motion.sh`：将已有标准 NPZ 转为 torso-root 参考动作，校正 waist 并校验 FK。
+
+```bash
+bash g1.sh instinct doctor
+# 缺少项目内辅助包或网格时先运行：bash g1.sh instinct setup
+bash scripts/25_prepare_instinct_motion.sh --source motions/processed/amp_dance.npz
+bash scripts/21_train_instinct.sh --profile beyondmimic --iterations 30000 --name g1_dance
+bash scripts/22_play_instinct.sh --profile beyondmimic --checkpoint latest --port 8080
+bash scripts/23_export_instinct.sh --profile beyondmimic --checkpoint latest
+bash scripts/24_deploy_instinct.sh --bundle /完整路径/部署包 --headless --steps 500
+```
 
 新配方的来源、中文参数说明和公平对照步骤见 [训练配置优化依据与对照实验](../docs/训练配置优化依据与对照实验.md)。使用 `bash g1.sh --python scripts/tools/compare_policies.py --help` 查看多策略比较工具。
 

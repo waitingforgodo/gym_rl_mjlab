@@ -1,6 +1,6 @@
 # 导出接口约定
 
-导出实现见 `workspace/exporting.py`，仿真部署实现见 `workspace/deployment.py`；独立入口为 `scripts/reinforcement_learning/rsl_rl/export.py` 和 `scripts/deploy/deploy_sim.py`。完整操作过程见 [训练到仿真部署教程](training_to_sim_deployment.md)。
+导出实现见 `workspace/common/exporting.py`，仿真部署实现见 `workspace/common/deployment.py`；独立入口为 `scripts/reinforcement_learning/rsl_rl/export.py` 和 `scripts/deploy/deploy_sim.py`。完整操作过程见 [训练到仿真部署教程](training_to_sim_deployment.md)。
 
 `policy_jit.pt` 输入是 actor 所用观测组按 `actor_observation_groups` 顺序拼接的二维 float Tensor。`observation_terms` 给出每项在拼接向量的起止下标，右端不包含。观测项的函数名指向固定 mjlab 版本的实现；本文件不重写 IMU、四元数或参考坐标变换的数学约定。
 

@@ -2,7 +2,7 @@
 
 运行：bash g1.sh --python scripts/reinforcement_learning/rsl_rl/play.py \
     --checkpoint latest --viewer viser --port 8080
-打开终端打印的网页地址。此程序不训练，详细推理实现见 workspace/inference.py。
+打开终端打印的网页地址。此程序不训练，详细推理实现见 workspace/common/inference.py。
 """
 import sys
 from pathlib import Path
@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from workspace.cli import ROOT, parser, resolve
-from workspace.inference import load_for_inference, view
+from workspace.common.inference import load_for_inference, view
 
 
 def main():

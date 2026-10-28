@@ -9,7 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from workspace.cli import ROOT, emit, parser
-from workspace.motion import import_reference
+from workspace.common.motion import import_reference
 
 
 def main():

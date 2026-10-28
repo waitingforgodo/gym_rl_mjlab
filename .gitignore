@@ -76,6 +76,23 @@ events.out.tfevents.*
 .ruff_cache/
 *.egg-info/
 
+# SuperMimic 上游只纳入源码、文本配置、文档和许可证。
+/workspace/supermimic/upstream/media/
+/workspace/supermimic/upstream/data/
+/workspace/supermimic/upstream/logs/
+
+# Instinct 上游源码入库；运行所需网格由 setup 按固定提交与 SHA-256 恢复。
+/workspace/instinct/upstream/**/.git/
+/workspace/instinct/upstream/**/*.STL
+/workspace/instinct/upstream/**/*.stl
+/workspace/instinct/upstream/**/*.obj
+/workspace/instinct/upstream/**/*.dae
+/workspace/instinct/upstream/**/*.png
+/workspace/instinct/upstream/**/*.jpg
+/workspace/instinct/upstream/**/*.jpeg
+/workspace/instinct/upstream/**/*.gif
+/workspace/instinct/upstream/**/*.mp4
+
 # 编辑器和操作系统生成的临时文件。
 .DS_Store
 Thumbs.db

@@ -1,20 +1,4 @@
-"""依据 arXiv:2610.28480v1 编写的 SuperMimic 独立复现。
+"""SuperMimic：可微世界模型 + BPTT；算法原文代码在 upstream/。
 
-官方截至 2026-10-27 未公开训练源码。本目录只声称复现论文公开的算法、
-网络和训练接口；不能把本地单动作实验写成论文 129514 动作结果的复现。
+训练见 training.py，回放/评测见 inference.py，仿真部署见 deployment.py。
 """
-
-from .config import SuperMimicConfig
-
-
-def source_sha256(root):
-    """将全部 SuperMimic Python 源码纳入 checkpoint 契约。"""
-    import hashlib
-    digest = hashlib.sha256()
-    for path in sorted((root/'workspace'/'supermimic').glob('*.py')):
-        digest.update(path.name.encode())
-        digest.update(path.read_bytes())
-    return digest.hexdigest()
-
-
-__all__ = ['SuperMimicConfig', 'source_sha256']

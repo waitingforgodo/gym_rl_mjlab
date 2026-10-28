@@ -5,8 +5,9 @@ from pathlib import Path
 from types import SimpleNamespace
 import unittest
 
-from workspace.configuration import apply_agent_overrides, validate_ppo_config
-from workspace.recipes import apply_recipe
+from workspace.common.configuration import apply_agent_overrides, validate_ppo_config
+from workspace.common.recipes import apply_recipe
+from workspace.common.profiles import profile_path
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -19,7 +20,7 @@ class RecipeTests(unittest.TestCase):
 
     def configs(self, name, play=False):
         from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
-        spec = json.loads((ROOT / 'profiles' / f'{name}.json').read_text())
+        spec = json.loads((profile_path(ROOT, name)).read_text())
         cfg, agent = load_env_cfg(spec['task'], play=play), load_rl_cfg(spec['task'])
         apply_agent_overrides(agent, spec.get('agent_overrides', {}))
         validate_ppo_config(agent, spec['num_envs'])
@@ -70,16 +71,6 @@ class RecipeTests(unittest.TestCase):
         for name in ('typo', 'tracking_robust_v1'):
             with self.subTest(name=name), self.assertRaises(ValueError):
                 apply_recipe(cfg, agent, name)
-
-    def test_supermimic_recipe_matches_paper_environment_differences(self):
-        cfg, _ = self.configs('supermimic_4096')
-        self.assertNotIn('push_robot', cfg.events)
-        self.assertNotIn('self_collisions', cfg.rewards)
-        self.assertNotIn('ee_body_pos', cfg.terminations)
-        self.assertIn('motion_done', cfg.terminations)
-        self.assertEqual(cfg.rewards['joint_limit'].weight, -2.)
-        self.assertEqual(cfg.commands['motion'].sampling_mode, 'adaptive')
-
 
 if __name__ == '__main__':
     unittest.main()

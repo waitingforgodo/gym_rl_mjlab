@@ -5,8 +5,8 @@ from pathlib import Path
 
 import numpy as np
 
-from workspace.motion import (angular_velocity_world, continuous_quat, inspect,
-                              quat_multiply, resample_csv)
+from workspace.common.motion import (angular_velocity_world, continuous_quat, inspect,
+                              quat_multiply, resample_csv,scalar_float)
 
 
 class MotionTests(unittest.TestCase):
@@ -52,6 +52,11 @@ class MotionTests(unittest.TestCase):
         for data in (np.zeros((5, 35)), np.zeros((1, 36)), np.zeros((5, 36)), np.full((5, 36), np.nan)):
             with self.assertRaises(ValueError):
                 resample_csv(data, 60, 50)
+
+    def test_npz_scalar_accepts_zero_or_one_dimensional_encoding(self):
+        self.assertEqual(scalar_float(np.array(50.)),50.)
+        self.assertEqual(scalar_float(np.array([50.])),50.)
+        with self.assertRaises(ValueError):scalar_float(np.array([50.,60.]))
 
     def test_named_motion_rejects_wrong_order_or_rate(self):
         with tempfile.TemporaryDirectory() as folder:

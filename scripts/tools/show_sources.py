@@ -9,7 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from workspace.cli import emit, parser
-from workspace.source_map import locate_sources
+from workspace.common.source_map import locate_sources
 
 
 def main():
